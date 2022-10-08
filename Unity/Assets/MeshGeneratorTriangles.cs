@@ -1,14 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
 public class MeshGeneratorTriangles : MonoBehaviour
 {
-    MeshFilter m_Mf;
+    private MeshFilter m_Mf;
 
-    void Start()
+    private void Start()
     {
         m_Mf = GetComponent<MeshFilter>();
         //m_Mf.mesh = CreateTriangle();
@@ -16,17 +13,19 @@ public class MeshGeneratorTriangles : MonoBehaviour
         m_Mf.mesh = CreateGridXZ(7, 4, new Vector3(3, 1, 3));
     }
 
-    Mesh CreateTriangle()
+    private Mesh CreateTriangle()
     {
-        Mesh mesh = new Mesh();
-        mesh.name = "triangle";
+        var mesh = new Mesh
+        {
+            name = "triangle"
+        };
 
-        Vector3[] vertices = new Vector3[3];
-        int[] triangles = new int[1 * 3];
+        var vertices = new Vector3[3];
+        var triangles = new int[1 * 3];
 
-        vertices[0] = Vector3.right; // (1,0,0)
-        vertices[1] = Vector3.up; // (0,1,0)
-        vertices[2] = Vector3.forward; // (0,0,1)
+        vertices[0] = Vector3.right;
+        vertices[1] = Vector3.up;
+        vertices[2] = Vector3.forward;
 
         triangles[0] = 0;
         triangles[1] = 1;
@@ -38,13 +37,15 @@ public class MeshGeneratorTriangles : MonoBehaviour
         return mesh;
     }
 
-    Mesh CreateQuad(Vector3 halfSize)
+    private Mesh CreateQuad(Vector3 halfSize)
     {
-        Mesh mesh = new Mesh();
-        mesh.name = "quad";
+        var mesh = new Mesh
+        {
+            name = "quad"
+        };
 
-        Vector3[] vertices = new Vector3[4];
-        int[] triangles = new int[2 * 3];
+        var vertices = new Vector3[4];
+        var triangles = new int[2 * 3];
 
         vertices[0] = new Vector3(-halfSize.x, 0, -halfSize.z);
         vertices[1] = new Vector3(-halfSize.x, 0, halfSize.z);
@@ -65,31 +66,31 @@ public class MeshGeneratorTriangles : MonoBehaviour
         return mesh;
     }
 
-    Mesh CreateStrip(int nSegments, Vector3 halfSize)
+    private Mesh CreateStrip(int nSegments, Vector3 halfSize)
     {
-        Mesh mesh = new Mesh();
-        mesh.name = "strip";
-
-        Vector3[] vertices = new Vector3[(nSegments + 1) * 2];
-        int[] triangles = new int[nSegments * 2 * 3];
-
-        int index = 0;
-        Vector3 leftTopPos = new Vector3(-halfSize.x, 0, halfSize.z);
-        Vector3 rightTopPos = new Vector3(halfSize.x, 0, halfSize.z);
-
-        // 1 boucle for pour remplir vertices
-        for (int i = 0; i < nSegments + 1; i++)
+        var mesh = new Mesh
         {
-            float k = (float) i / nSegments;
+            name = "strip"
+        };
 
-            Vector3 tmpPos = Vector3.Lerp(leftTopPos, rightTopPos, k);
-            vertices[index++] = tmpPos; // vertice du haut
-            vertices[index++] = tmpPos - 2 * halfSize.z * Vector3.forward; // vertice du bas
+        var vertices = new Vector3[(nSegments + 1) * 2];
+        var triangles = new int[nSegments * 2 * 3];
+
+        var index = 0;
+        var leftTopPos = new Vector3(-halfSize.x, 0, halfSize.z);
+        var rightTopPos = new Vector3(halfSize.x, 0, halfSize.z);
+
+        for (var i = 0; i < nSegments + 1; i++)
+        {
+            var k = (float) i / nSegments;
+
+            var tmpPos = Vector3.Lerp(leftTopPos, rightTopPos, k);
+            vertices[index++] = tmpPos;
+            vertices[index++] = tmpPos - 2 * halfSize.z * Vector3.forward;
         }
 
-        // 1 boucle for pour remplir triangles
         index = 0;
-        for (int i = 0; i < nSegments; i++)
+        for (var i = 0; i < nSegments; i++)
         {
             triangles[index++] = 2 * i;
             triangles[index++] = 2 * i + 2;
@@ -106,10 +107,12 @@ public class MeshGeneratorTriangles : MonoBehaviour
         return mesh;
     }
 
-    Mesh CreateGridXZ(int nSegmentsX, int nSegmentsZ, Vector3 halfSize)
+    private Mesh CreateGridXZ(int nSegmentsX, int nSegmentsZ, Vector3 halfSize)
     {
-        Mesh mesh = new Mesh();
-        mesh.name = "grid";
+        var mesh = new Mesh
+        {
+            name = "grid"
+        };
 
         var vertices = new Vector3[(nSegmentsX + 1) * (nSegmentsZ + 1)];
         var triangles = new int[nSegmentsX * nSegmentsZ * 6];
@@ -138,7 +141,7 @@ public class MeshGeneratorTriangles : MonoBehaviour
                 triangles[index++] = x + z * (nSegmentsX + 1);
                 triangles[index++] = x + z * (nSegmentsX + 1) + 1;
                 triangles[index++] = x + z * (nSegmentsX + 1) + (nSegmentsX + 1);
-        
+
                 triangles[index++] = x + z * (nSegmentsX + 1) + 1;
                 triangles[index++] = x + z * (nSegmentsX + 1) + 1 + (nSegmentsX + 1);
                 triangles[index++] = x + z * (nSegmentsX + 1) + (nSegmentsX + 1);

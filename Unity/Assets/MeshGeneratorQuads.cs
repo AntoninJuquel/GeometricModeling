@@ -1,44 +1,42 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
 public class MeshGeneratorQuads : MonoBehaviour
 {
-    MeshFilter m_Mf;
+    private MeshFilter m_Mf;
 
-    void Start()
+    private void Start()
     {
         m_Mf = GetComponent<MeshFilter>();
         //m_Mf.mesh = CreateStrip(7, new Vector3(4, 1, 3));
         m_Mf.mesh = CreateGridXZ(7, 4, new Vector3(4, 1, 3));
     }
 
-    Mesh CreateStrip(int nSegments, Vector3 halfSize)
+    private Mesh CreateStrip(int nSegments, Vector3 halfSize)
     {
-        Mesh mesh = new Mesh();
-        mesh.name = "strip";
-
-        Vector3[] vertices = new Vector3[(nSegments + 1) * 2];
-        int[] quads = new int[nSegments * 4];
-
-        int index = 0;
-        Vector3 leftTopPos = new Vector3(-halfSize.x, 0, halfSize.z);
-        Vector3 rightTopPos = new Vector3(halfSize.x, 0, halfSize.z);
-
-        // 1 boucle for pour remplir vertices
-        for (int i = 0; i < nSegments + 1; i++)
+        var mesh = new Mesh
         {
-            float k = (float) i / nSegments;
+            name = "strip"
+        };
 
-            Vector3 tmpPos = Vector3.Lerp(leftTopPos, rightTopPos, k);
-            vertices[index++] = tmpPos; // vertice du haut
-            vertices[index++] = tmpPos - 2 * halfSize.z * Vector3.forward; // vertice du bas
+        var vertices = new Vector3[(nSegments + 1) * 2];
+        var quads = new int[nSegments * 4];
+
+        var index = 0;
+        var leftTopPos = new Vector3(-halfSize.x, 0, halfSize.z);
+        var rightTopPos = new Vector3(halfSize.x, 0, halfSize.z);
+
+        for (var i = 0; i < nSegments + 1; i++)
+        {
+            var k = (float) i / nSegments;
+
+            var tmpPos = Vector3.Lerp(leftTopPos, rightTopPos, k);
+            vertices[index++] = tmpPos;
+            vertices[index++] = tmpPos - 2 * halfSize.z * Vector3.forward;
         }
 
-        // 1 boucle for pour remplir triangles
         index = 0;
-        for (int i = 0; i < nSegments; i++)
+        for (var i = 0; i < nSegments; i++)
         {
             quads[index++] = 2 * i;
             quads[index++] = 2 * i + 2;
@@ -53,10 +51,12 @@ public class MeshGeneratorQuads : MonoBehaviour
     }
 
 
-    Mesh CreateGridXZ(int nSegmentsX, int nSegmentsZ, Vector3 halfSize)
+    private Mesh CreateGridXZ(int nSegmentsX, int nSegmentsZ, Vector3 halfSize)
     {
-        var mesh = new Mesh();
-        mesh.name = "grid";
+        var mesh = new Mesh
+        {
+            name = "grid"
+        };
 
         var vertices = new Vector3[(nSegmentsX + 1) * (nSegmentsZ + 1)];
         var quads = new int[nSegmentsX * nSegmentsZ * 4];
@@ -77,7 +77,6 @@ public class MeshGeneratorQuads : MonoBehaviour
             }
         }
 
-        // 1 boucle for pour remplir triangles
         index = 0;
         for (var z = 0; z < nSegmentsZ; z++)
         {
@@ -102,44 +101,48 @@ public class MeshGeneratorQuads : MonoBehaviour
     {
         if (!(m_Mf && m_Mf.mesh)) return;
 
-        Mesh mesh = m_Mf.mesh;
-        Vector3[] vertices = mesh.vertices;
-        int[] quads = mesh.GetIndices(0);
+        var mesh = m_Mf.mesh;
+        var vertices = mesh.vertices;
+        var quads = mesh.GetIndices(0);
 
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 15;
-        style.normal.textColor = Color.red;
-
-        for (int i = 0; i < vertices.Length; i++)
+        var style = new GUIStyle
         {
-            Vector3 worldPos = transform.TransformPoint(vertices[i]);
+            fontSize = 15,
+            normal =
+            {
+                textColor = Color.red
+            }
+        };
+
+        for (var i = 0; i < vertices.Length; i++)
+        {
+            var worldPos = transform.TransformPoint(vertices[i]);
             Handles.Label(worldPos, i.ToString(), style);
         }
 
         Gizmos.color = Color.black;
         style.normal.textColor = Color.blue;
 
-        for (int i = 0; i < quads.Length / 4; i++)
+        for (var i = 0; i < quads.Length / 4; i++)
         {
-            int index1 = quads[4 * i];
-            int index2 = quads[4 * i + 1];
-            int index3 = quads[4 * i + 2];
-            int index4 = quads[4 * i + 3];
+            var index1 = quads[4 * i];
+            var index2 = quads[4 * i + 1];
+            var index3 = quads[4 * i + 2];
+            var index4 = quads[4 * i + 3];
 
-            Vector3 pt1 = transform.TransformPoint(vertices[index1]);
-            Vector3 pt2 = transform.TransformPoint(vertices[index2]);
-            Vector3 pt3 = transform.TransformPoint(vertices[index3]);
-            Vector3 pt4 = transform.TransformPoint(vertices[index4]);
+            var pt1 = transform.TransformPoint(vertices[index1]);
+            var pt2 = transform.TransformPoint(vertices[index2]);
+            var pt3 = transform.TransformPoint(vertices[index3]);
+            var pt4 = transform.TransformPoint(vertices[index4]);
 
             Gizmos.DrawLine(pt1, pt2);
             Gizmos.DrawLine(pt2, pt3);
             Gizmos.DrawLine(pt3, pt4);
             Gizmos.DrawLine(pt4, pt1);
 
-            string str = string.Format("{0} ({1},{2},{3},{4})",
-                i, index1, index2, index3, index4);
+            var str = $"{i} ({index1},{index2},{index3},{index4})";
 
-            // Handles.Label((pt1 + pt2 + pt3 + pt4) / 4.0f, str, style);
+            Handles.Label((pt1 + pt2 + pt3 + pt4) / 4.0f, str, style);
         }
     }
 }
