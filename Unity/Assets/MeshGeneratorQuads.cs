@@ -11,7 +11,7 @@ public class MeshGeneratorQuads : MonoBehaviour
     {
         m_Mf = GetComponent<MeshFilter>();
         //m_Mf.mesh = CreateStrip(7, new Vector3(4, 1, 3));
-        m_Mf.mesh = CreateGridXZ(7, 7, new Vector3(4, 1, 3));
+        m_Mf.mesh = CreateGridXZ(7, 4, new Vector3(4, 1, 3));
     }
 
     Mesh CreateStrip(int nSegments, Vector3 halfSize)
@@ -29,7 +29,7 @@ public class MeshGeneratorQuads : MonoBehaviour
         // 1 boucle for pour remplir vertices
         for (int i = 0; i < nSegments + 1; i++)
         {
-            float k = (float)i / nSegments;
+            float k = (float) i / nSegments;
 
             Vector3 tmpPos = Vector3.Lerp(leftTopPos, rightTopPos, k);
             vertices[index++] = tmpPos; // vertice du haut
@@ -67,11 +67,11 @@ public class MeshGeneratorQuads : MonoBehaviour
         var index = 0;
         for (var z = 0; z < nSegmentsZ + 1; z++)
         {
-            var i = (float)z / nSegmentsZ;
+            var i = (float) z / nSegmentsZ;
             var vPos = Vector3.Lerp(topPos, -topPos, i);
             for (var x = 0; x < nSegmentsX + 1; x++)
             {
-                var j = (float)x / nSegmentsX;
+                var j = (float) x / nSegmentsX;
                 var hPos = Vector3.Lerp(leftPos, -leftPos, j);
                 vertices[index++] = vPos + hPos;
             }
@@ -79,14 +79,17 @@ public class MeshGeneratorQuads : MonoBehaviour
 
         // 1 boucle for pour remplir triangles
         index = 0;
-        for (int i = 0; i < nSegmentsX * (nSegmentsZ - 1); i++)
+        for (var z = 0; z < nSegmentsZ; z++)
         {
-            if(i%nSegmentsX==0) continue;
-            quads[index++] = i;
-            quads[index++] = i + 1;
-            quads[index++] = i + nSegmentsX + 2;
-            quads[index++] = i + nSegmentsX + 1;
+            for (var x = 0; x < nSegmentsX; x++)
+            {
+                quads[index++] = x + z * (nSegmentsX + 1);
+                quads[index++] = x + z * (nSegmentsX + 1) + 1;
+                quads[index++] = x + z * (nSegmentsX + 1) + 1 + (nSegmentsX + 1);
+                quads[index++] = x + z * (nSegmentsX + 1) + (nSegmentsX + 1);
+            }
         }
+
 
         mesh.vertices = vertices;
         mesh.SetIndices(quads, MeshTopology.Quads, 0);
@@ -136,7 +139,7 @@ public class MeshGeneratorQuads : MonoBehaviour
             string str = string.Format("{0} ({1},{2},{3},{4})",
                 i, index1, index2, index3, index4);
 
-            Handles.Label((pt1 + pt2 + pt3 + pt4) / 4.0f, str, style);
+            // Handles.Label((pt1 + pt2 + pt3 + pt4) / 4.0f, str, style);
         }
     }
 }
