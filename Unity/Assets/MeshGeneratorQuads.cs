@@ -1,112 +1,66 @@
-using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 public class MeshGeneratorQuads : MonoBehaviour
 {
-    delegate Vector3 ComputePosDelegate(float kX, float kZ);
+    private delegate Vector3 ComputePosDelegate(float kX, float kZ);
 
-    private MeshFilter m_Mf;
+    private MeshFilter _mMf;
 
     [SerializeField] private AnimationCurve profile;
 
     private void Start()
     {
-        m_Mf = GetComponent<MeshFilter>();
-    }
-
-    private void Update()
-    {
-        //m_Mf.mesh = CreateStrip(7, new Vector3(4, 1, 3));
-        m_Mf.mesh = CreateNormalizedGridXZ(10, 10, (x, z) =>
+        _mMf = GetComponent<MeshFilter>();
+        _mMf.mesh = CreateGridXZ(10, 1, (x, z) =>
         {
             //return new Vector3(Mathf.Lerp(-10f, 10f, x), 0, Mathf.Lerp(-10f, 10f, z));
-            float rho, theta, y;
 
-            rho = profile.Evaluate(z) * 4;
-            theta = x * 2 * Mathf.PI;
-            y = z * 6;
+            var rho = profile.Evaluate(z) * 4;
+            var theta = x * 2 * Mathf.PI;
+            var y = z * 6;
             return new Vector3(rho * Mathf.Sin(y) * Mathf.Cos(theta), rho * Mathf.Sin(y) * Mathf.Sin(theta), rho * Mathf.Cos(y));
         });
+        GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
+        Debug.Log(ConvertToCsv("\t"));
     }
 
-    private Mesh CreateStrip(int nSegments, Vector3 halfSize)
+    private Mesh CreateGridXZ(int nSegmentsX, int nSegmentsZ, ComputePosDelegate computePos = null)
     {
         var mesh = new Mesh
         {
-            name = "strip"
-        };
-
-        var vertices = new Vector3[(nSegments + 1) * 2];
-        var quads = new int[nSegments * 4];
-
-        var index = 0;
-        var leftTopPos = new Vector3(-halfSize.x, 0, halfSize.z);
-        var rightTopPos = new Vector3(halfSize.x, 0, halfSize.z);
-
-        for (var i = 0; i < nSegments + 1; i++)
-        {
-            var k = (float)i / nSegments;
-
-            var tmpPos = Vector3.Lerp(leftTopPos, rightTopPos, k);
-            vertices[index++] = tmpPos;
-            vertices[index++] = tmpPos - 2 * halfSize.z * Vector3.forward;
-        }
-
-        index = 0;
-        for (var i = 0; i < nSegments; i++)
-        {
-            quads[index++] = 2 * i;
-            quads[index++] = 2 * i + 2;
-            quads[index++] = 2 * i + 3;
-            quads[index++] = 2 * i + 1;
-        }
-
-        mesh.vertices = vertices;
-        mesh.SetIndices(quads, MeshTopology.Quads, 0);
-
-        return mesh;
-    }
-
-
-    private Mesh CreateGridXZ(int nSegmentsX, int nSegmentsZ, Vector3 halfSize)
-    {
-        var mesh = new Mesh
-        {
-            name = "grid"
+            name = "normalizedGrid"
         };
 
         var vertices = new Vector3[(nSegmentsX + 1) * (nSegmentsZ + 1)];
         var quads = new int[nSegmentsX * nSegmentsZ * 4];
 
-        var leftPos = new Vector3(-halfSize.x, 0, 0);
-        var topPos = new Vector3(0, 0, halfSize.z);
-
+        //Vertices
         var index = 0;
-        for (var z = 0; z < nSegmentsZ + 1; z++)
+        for (var i = 0; i < nSegmentsZ + 1; i++)
         {
-            var i = (float)z / nSegmentsZ;
-            var vPos = Vector3.Lerp(topPos, -topPos, i);
-            for (var x = 0; x < nSegmentsX + 1; x++)
+            var kZ = (float) i / nSegmentsZ;
+
+            for (var j = 0; j < nSegmentsX + 1; j++)
             {
-                var j = (float)x / nSegmentsX;
-                var hPos = Vector3.Lerp(leftPos, -leftPos, j);
-                vertices[index++] = vPos + hPos;
+                var kX = (float) j / nSegmentsX;
+                vertices[index++] = computePos != null ? computePos(kX, kZ) : new Vector3(kX, 0, kZ);
             }
         }
 
         index = 0;
-        for (var z = 0; z < nSegmentsZ; z++)
+        //Quads
+        for (var i = 0; i < nSegmentsZ; i++)
         {
-            for (var x = 0; x < nSegmentsX; x++)
+            for (var j = 0; j < nSegmentsX; j++)
             {
-                quads[index++] = x + z * (nSegmentsX + 1);
-                quads[index++] = x + z * (nSegmentsX + 1) + 1;
-                quads[index++] = x + z * (nSegmentsX + 1) + 1 + (nSegmentsX + 1);
-                quads[index++] = x + z * (nSegmentsX + 1) + (nSegmentsX + 1);
+                quads[index++] = i * (nSegmentsX + 1) + j;
+                quads[index++] = (i + 1) * (nSegmentsX + 1) + j;
+                quads[index++] = (i + 1) * (nSegmentsX + 1) + j + 1;
+                quads[index++] = i * (nSegmentsX + 1) + j + 1;
             }
         }
-
 
         mesh.vertices = vertices;
         mesh.SetIndices(quads, MeshTopology.Quads, 0);
@@ -114,70 +68,21 @@ public class MeshGeneratorQuads : MonoBehaviour
         return mesh;
     }
 
-    private Mesh CreateNormalizedGridXZ(int nSegmentsX, int nSegmentsZ, ComputePosDelegate computePos = null)
+    private string ConvertToCsv(string separator)
     {
-        var mesh = new Mesh
-        {
-            name = "grid"
-        };
+        if (!(_mMf && _mMf.mesh)) return "";
 
-        var vertices = new Vector3[(nSegmentsX + 1) * (nSegmentsZ + 1)];
-        var quads = new int[nSegmentsX * nSegmentsZ * 4];
+        var vertices = _mMf.mesh.vertices;
+        var quads = _mMf.mesh.GetIndices(0);
 
-        var index = 0;
-        for (var z = 0; z < nSegmentsZ + 1; z++)
-        {
-            var kZ = (float)z / nSegmentsZ;
-
-            for (var x = 0; x < nSegmentsX + 1; x++)
-            {
-                var kX = (float)x / nSegmentsX;
-                vertices[index++] = computePos?.Invoke(kX, kZ) ?? new Vector3(kX, 0, kZ);
-            }
-        }
-
-        index = 0;
-        for (var z = 0; z < nSegmentsZ; z++)
-        {
-            for (var x = 0; x < nSegmentsX; x++)
-            {
-                quads[index++] = x + z * (nSegmentsX + 1) + (nSegmentsX + 1);
-                quads[index++] = x + z * (nSegmentsX + 1) + 1 + (nSegmentsX + 1);
-                quads[index++] = x + z * (nSegmentsX + 1) + 1;
-                quads[index++] = x + z * (nSegmentsX + 1);
-            }
-        }
-
-
-        mesh.vertices = vertices;
-        mesh.SetIndices(quads, MeshTopology.Quads, 0);
-
-        return mesh;
-    }
-
-    string ConvertToCSV(string separator)
-    {
-        if (!(m_Mf && m_Mf.mesh)) return "";
-
-        var vertices = m_Mf.mesh.vertices;
-        var quads = m_Mf.mesh.GetIndices(0);
-
-        var strings = new List<string>();
-
-        for (var i = 0; i < vertices.Length; i++)
-        {
-            var pos = vertices[i];
-            strings.Add($"{i}{separator}{pos.x:N03} {pos.y:N03} {pos.z:N03}{separator}");
-        }
+        var strings = vertices.Select((pos, i) => $"{i}{separator}{pos.x:N03} {pos.y:N03} {pos.z:N03}{separator}{separator}").ToList();
 
         for (var i = vertices.Length; i < quads.Length / 4; i++)
-        {
-            strings.Add($"{separator}{separator}{separator}");
-        }
+            strings.Add(separator + separator + separator);
 
         for (var i = 0; i < quads.Length / 4; i++)
         {
-            strings[i] = $"{strings[i]}{i}{separator}{quads[4 * i + 0]},{quads[4 * i + 1]},{quads[4 * i + 2]},{quads[4 * i + 3]}";
+            strings[i] += $"{i}{separator}{quads[4 * i + 0]},{quads[4 * i + 1]},{quads[4 * i + 2]},{quads[4 * i + 3]}";
         }
 
         return $"Vertices{separator}{separator}{separator}Faces\nIndex{separator}Position{separator}{separator}Index{separator}Indices des vertices\n{string.Join("\n", strings)}";
@@ -185,9 +90,9 @@ public class MeshGeneratorQuads : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (!(m_Mf && m_Mf.mesh)) return;
+        if (!(_mMf && _mMf.mesh)) return;
 
-        var mesh = m_Mf.mesh;
+        var mesh = _mMf.mesh;
         var vertices = mesh.vertices;
         var quads = mesh.GetIndices(0);
 
