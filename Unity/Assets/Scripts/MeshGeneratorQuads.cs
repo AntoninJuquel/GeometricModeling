@@ -1,4 +1,5 @@
 using System.Linq;
+using HalfEdge;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,18 +11,13 @@ public class MeshGeneratorQuads : MonoBehaviour
 
     [SerializeField] private AnimationCurve profile;
 
+    public HalfEdgeMesh halfEdgeMesh;
+
     private void Start()
     {
         _mMf = GetComponent<MeshFilter>();
-        _mMf.mesh = CreateGridXZ(10, 1, (x, z) =>
-        {
-            //return new Vector3(Mathf.Lerp(-10f, 10f, x), 0, Mathf.Lerp(-10f, 10f, z));
-
-            var rho = profile.Evaluate(z) * 4;
-            var theta = x * 2 * Mathf.PI;
-            var y = z * 6;
-            return new Vector3(rho * Mathf.Sin(y) * Mathf.Cos(theta), rho * Mathf.Sin(y) * Mathf.Sin(theta), rho * Mathf.Cos(y));
-        });
+        _mMf.mesh = CreateGridXZ(1, 1);
+        halfEdgeMesh = new HalfEdgeMesh(_mMf.mesh);
         GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         Debug.Log(ConvertToCsv("\t"));
     }

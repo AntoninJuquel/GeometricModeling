@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
 namespace WingedEdge
 {
+    [Serializable]
     public class WingedEdge
     {
         public int index;
@@ -18,6 +20,7 @@ namespace WingedEdge
         public WingedEdge endCCWEdge;
     }
 
+    [Serializable]
     public class Vertex
     {
         public int index;
@@ -25,12 +28,14 @@ namespace WingedEdge
         public WingedEdge edge;
     }
 
+    [Serializable]
     public class Face
     {
         public int index;
         public WingedEdge edge;
     }
 
+    [Serializable]
     public class WingedEdgeMesh
     {
         public List<Vertex> vertices;
@@ -40,27 +45,26 @@ namespace WingedEdge
         public WingedEdgeMesh(Mesh mesh)
         {
             // constructeur prenant un mesh Vertex-Face en paramètre
-// magic happens
+            // magic happens
         }
 
         public Mesh ConvertToFaceVertexMesh()
         {
             Mesh faceVertexMesh = new Mesh();
-// magic happens
+            // magic happens
             return faceVertexMesh;
         }
 
         public string ConvertToCSVFormat(string separator = "\t")
         {
             string str = "";
-//magic happens
+            //magic happens
             return str;
         }
 
         public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces)
-
         {
-//magic happens
+            //magic happens
         }
     }
 }
