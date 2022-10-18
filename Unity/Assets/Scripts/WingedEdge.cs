@@ -6,6 +6,14 @@ using UnityEngine;
 namespace WingedEdge
 {
     [Serializable]
+    public class Vertex
+    {
+        public int index;
+        public Vector3 position;
+        public WingedEdge edge;
+    }
+
+    [Serializable]
     public class WingedEdge
     {
         public int index;
@@ -18,14 +26,6 @@ namespace WingedEdge
         public WingedEdge startCCWEdge;
         public WingedEdge endCWEdge;
         public WingedEdge endCCWEdge;
-    }
-
-    [Serializable]
-    public class Vertex
-    {
-        public int index;
-        public Vector3 position;
-        public WingedEdge edge;
     }
 
     [Serializable]

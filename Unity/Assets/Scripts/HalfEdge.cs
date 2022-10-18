@@ -1,11 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 namespace HalfEdge
 {
+    [Serializable]
+    public class Vertex
+    {
+        public int index;
+        public Vector3 position;
+        public HalfEdge outgoingEdge;
+
+        public Vertex(int index, Vector3 position)
+        {
+            this.index = index;
+            this.position = position;
+        }
+    }
+
     [Serializable]
     public class HalfEdge
     {
@@ -20,20 +32,6 @@ namespace HalfEdge
         {
             this.index = index;
             this.sourceVertex = sourceVertex;
-        }
-    }
-
-    [Serializable]
-    public class Vertex
-    {
-        public int index;
-        public Vector3 position;
-        public HalfEdge outgoingEdge;
-
-        public Vertex(int index, Vector3 position)
-        {
-            this.index = index;
-            this.position = position;
         }
     }
 
@@ -62,6 +60,13 @@ namespace HalfEdge
             var meshVertices = mesh.vertices;
             var meshQuads = mesh.GetIndices(0);
 
+            // First, get vertices
+            for (var i = 0; i < meshVertices.Length; i++)
+            {
+                vertices.Add(new Vertex(i, meshVertices[i]));
+            }
+
+            // Second, build faces & edged
             for (var i = 0; i < meshQuads.Length; i += 4)
             {
                 var i0 = meshQuads[i];
@@ -69,25 +74,33 @@ namespace HalfEdge
                 var i2 = meshQuads[i + 2];
                 var i3 = meshQuads[i + 3];
 
-                var vert0 = vertices.Find(v => v.index == i0) ?? new Vertex(i0, meshVertices[i0]);
-                var vert1 = vertices.Find(v => v.index == i1) ?? new Vertex(i1, meshVertices[i1]);
-                var vert2 = vertices.Find(v => v.index == i2) ?? new Vertex(i2, meshVertices[i2]);
-                var vert3 = vertices.Find(v => v.index == i3) ?? new Vertex(i3, meshVertices[i3]);
+                var vert0 = vertices[i0];
+                var vert1 = vertices[i1];
+                var vert2 = vertices[i2];
+                var vert3 = vertices[i3];
 
                 var edge0 = new HalfEdge(i, vert0);
                 var edge1 = new HalfEdge(i + 1, vert1);
                 var edge2 = new HalfEdge(i + 2, vert2);
                 var edge3 = new HalfEdge(i + 3, vert3);
 
-                var face = new Face(i, edge0);
-                
+                var face = new Face(i / 4, edge0);
+
                 edge0.prevEdge = edge2.nextEdge = edge3;
                 edge1.prevEdge = edge3.nextEdge = edge0;
                 edge2.prevEdge = edge0.nextEdge = edge1;
-                edge3.prevEdge = edge1.nextEdge =  edge2;
+                edge3.prevEdge = edge1.nextEdge = edge2;
 
                 edge0.face = edge1.face = edge2.face = edge3.face = face;
+
+                edges.Add(edge0);
+                edges.Add(edge1);
+                edges.Add(edge2);
+                edges.Add(edge3);
+                faces.Add(face);
             }
+
+            // Third link twin edges
         }
 
         public Mesh ConvertToFaceVertexMesh()
