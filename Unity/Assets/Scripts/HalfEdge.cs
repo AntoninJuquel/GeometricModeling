@@ -106,7 +106,28 @@ namespace HalfEdge
         public Mesh ConvertToFaceVertexMesh()
         {
             Mesh faceVertexMesh = new Mesh();
-            // magic happens
+
+            var meshVertices = new Vector3[vertices.Count];
+            var meshQuads = new int[faces.Count * 4];
+
+            var index = 0;
+            foreach (var vertex in vertices)
+            {
+                meshVertices[index++] = vertex.position;
+            }
+
+            index = 0;
+            foreach (var face in faces)
+            {
+                meshQuads[index++] = face.edge.sourceVertex.index;
+                meshQuads[index++] = face.edge.nextEdge.sourceVertex.index;
+                meshQuads[index++] = face.edge.nextEdge.nextEdge.sourceVertex.index;
+                meshQuads[index++] = face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.index;
+            }
+
+            faceVertexMesh.vertices = meshVertices;
+            faceVertexMesh.SetIndices(meshQuads, MeshTopology.Quads, 0);
+
             return faceVertexMesh;
         }
 
