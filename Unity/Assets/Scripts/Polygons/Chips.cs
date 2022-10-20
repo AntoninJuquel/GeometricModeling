@@ -4,12 +4,14 @@ namespace Polygons
 {
     public class Chips : Polygon
     {
+        [SerializeField] private Vector3 halfSize = new(4, 2, 3);
+
         private void Start()
         {
-            Mesh = CreateChips(new Vector3(4, 2, 3));
+            Mesh = CreateChips();
         }
 
-        private Mesh CreateChips(Vector3 halfSize)
+        private Mesh CreateChips()
         {
             Mesh mesh = new Mesh();
             mesh.name = "chips";

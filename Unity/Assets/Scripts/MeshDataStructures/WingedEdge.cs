@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace WingedEdge
 {
-    [Serializable]
     public class Vertex
     {
         public int index;
@@ -13,29 +12,28 @@ namespace WingedEdge
         public WingedEdge edge;
     }
 
-    [Serializable]
     public class WingedEdge
     {
         public int index;
-        public Vertex startVertex;
 
-        public Vertex endVertex;
-        public Face leftFace;
-        public Face rightFace;
+        public Vertex startVertex;
         public WingedEdge startCWEdge;
         public WingedEdge startCCWEdge;
+
+        public Vertex endVertex;
         public WingedEdge endCWEdge;
         public WingedEdge endCCWEdge;
+
+        public Face leftFace;
+        public Face rightFace;
     }
 
-    [Serializable]
     public class Face
     {
         public int index;
         public WingedEdge edge;
     }
 
-    [Serializable]
     public class WingedEdgeMesh
     {
         public List<Vertex> vertices;

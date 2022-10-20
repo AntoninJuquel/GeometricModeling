@@ -4,12 +4,14 @@ namespace Polygons
 {
     public class Box : Polygon
     {
+        [SerializeField] private Vector3 halfSize = new(4, 2, 3);
+
         private void Start()
         {
-            Mesh = CreateBox(new Vector3(4, 2, 3));
+            Mesh = CreateBox();
         }
 
-        private Mesh CreateBox(Vector3 halfSize)
+        private Mesh CreateBox()
         {
             Mesh mesh = new Mesh();
             mesh.name = "box";
