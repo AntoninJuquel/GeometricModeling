@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace HalfEdge
 {
-    [Serializable]
     public class Vertex
     {
         public int index;
@@ -17,8 +15,7 @@ namespace HalfEdge
             this.position = position;
         }
     }
-
-    [Serializable]
+    
     public class HalfEdge
     {
         public int index;
@@ -32,10 +29,10 @@ namespace HalfEdge
         {
             this.index = index;
             this.sourceVertex = sourceVertex;
+            sourceVertex.outgoingEdge = this;
         }
     }
-
-    [Serializable]
+    
     public class Face
     {
         public int index;
@@ -47,8 +44,7 @@ namespace HalfEdge
             this.edge = edge;
         }
     }
-
-    [Serializable]
+    
     public class HalfEdgeMesh
     {
         public List<Vertex> vertices = new();
@@ -66,6 +62,7 @@ namespace HalfEdge
                 vertices.Add(new Vertex(i, meshVertices[i]));
             }
 
+            Dictionary<(int, int), HalfEdge> edgesDictionary = new();
             // Second, build faces & edged
             for (var i = 0; i < meshQuads.Length; i += 4)
             {
@@ -91,6 +88,66 @@ namespace HalfEdge
                 edge2.prevEdge = edge0.nextEdge = edge1;
                 edge3.prevEdge = edge1.nextEdge = edge2;
 
+                if (edgesDictionary.TryGetValue((i0, i1), out var e0))
+                {
+                    edge0.twinEdge = e0;
+                    e0.twinEdge = edge0;
+                }
+                else if (edgesDictionary.TryGetValue((i1, i0), out var e1))
+                {
+                    edge0.twinEdge = e1;
+                    e1.twinEdge = edge0;
+                }
+                else
+                {
+                    edgesDictionary.Add((i0, i1), edge0);
+                }
+
+                if (edgesDictionary.TryGetValue((i1, i2), out var e3))
+                {
+                    edge1.twinEdge = e3;
+                    e3.twinEdge = edge1;
+                }
+                else if (edgesDictionary.TryGetValue((i2, i1), out var e4))
+                {
+                    edge1.twinEdge = e4;
+                    e4.twinEdge = edge1;
+                }
+                else
+                {
+                    edgesDictionary.Add((i1, i2), edge1);
+                }
+
+                if (edgesDictionary.TryGetValue((i2, i3), out var e5))
+                {
+                    edge2.twinEdge = e5;
+                    e5.twinEdge = edge2;
+                }
+                else if (edgesDictionary.TryGetValue((i3, i2), out var e6))
+                {
+                    edge2.twinEdge = e6;
+                    e6.twinEdge = edge2;
+                }
+                else
+                {
+                    edgesDictionary.Add((i2, i3), edge2);
+                }
+
+                if (edgesDictionary.TryGetValue((i3, i0), out var e7))
+                {
+                    edge3.twinEdge = e7;
+                    e7.twinEdge = edge3;
+                }
+                else if (edgesDictionary.TryGetValue((i0, i3), out var e8))
+                {
+                    edge3.twinEdge = e8;
+                    e8.twinEdge = edge3;
+                }
+                else
+                {
+                    edgesDictionary.Add((i3, i0), edge3);
+                }
+
                 edge0.face = edge1.face = edge2.face = edge3.face = face;
 
                 edges.Add(edge0);
@@ -99,8 +156,6 @@ namespace HalfEdge
                 edges.Add(edge3);
                 faces.Add(face);
             }
-
-            // Third link twin edges
         }
 
         public Mesh ConvertToFaceVertexMesh()
@@ -138,9 +193,53 @@ namespace HalfEdge
             return str;
         }
 
+        private void DrawVertices()
+        {
+            foreach (var vertex in vertices)
+            {
+                var position = vertex.position;
+                Gizmos.DrawSphere(position, .1f);
+                var direction = (vertex.outgoingEdge.nextEdge.sourceVertex.position - position).normalized;
+                DrawArrow.ForGizmo(position, direction);
+            }
+        }
+
+        private void DrawEdges()
+        {
+            foreach (var edge in edges)
+            {
+                var position = edge.sourceVertex.position;
+                var direction = (edge.nextEdge.sourceVertex.position - position).normalized;
+                DrawArrow.ForGizmo(edge.sourceVertex.position, direction);
+            }
+        }
+
+        private void DrawFaces()
+        {
+            foreach (var face in faces)
+            {
+                var pos0 = face.edge.sourceVertex.position;
+                var pos1 = face.edge.nextEdge.sourceVertex.position;
+                var pos2 = face.edge.nextEdge.nextEdge.sourceVertex.position;
+                var pos3 = face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.position;
+                Gizmos.DrawLine(pos0, pos1);
+                Gizmos.DrawLine(pos1, pos2);
+                Gizmos.DrawLine(pos2, pos3);
+                Gizmos.DrawLine(pos3, pos0);
+                Gizmos.DrawLine(pos0, pos2);
+                Gizmos.DrawLine(pos1, pos3);
+            }
+        }
+
+
         public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces)
         {
-            //magic happens
+            if (drawVertices)
+                DrawVertices();
+            if (drawEdges)
+                DrawEdges();
+            if(drawFaces)
+                DrawFaces();
         }
     }
 }
