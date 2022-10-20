@@ -15,7 +15,7 @@ namespace HalfEdge
             this.position = position;
         }
     }
-    
+
     public class HalfEdge
     {
         public int index;
@@ -32,7 +32,7 @@ namespace HalfEdge
             sourceVertex.outgoingEdge = this;
         }
     }
-    
+
     public class Face
     {
         public int index;
@@ -44,7 +44,7 @@ namespace HalfEdge
             this.edge = edge;
         }
     }
-    
+
     public class HalfEdgeMesh
     {
         public List<Vertex> vertices = new();
@@ -193,35 +193,36 @@ namespace HalfEdge
             return str;
         }
 
-        private void DrawVertices()
+        private void DrawVertices(Transform transform)
         {
             foreach (var vertex in vertices)
             {
-                var position = vertex.position;
+                var position = transform.TransformPoint(vertex.position);
                 Gizmos.DrawSphere(position, .1f);
-                var direction = (vertex.outgoingEdge.nextEdge.sourceVertex.position - position).normalized;
+                var direction = (transform.TransformPoint(vertex.outgoingEdge.nextEdge.sourceVertex.position) - position).normalized;
                 DrawArrow.ForGizmo(position, direction);
             }
         }
 
-        private void DrawEdges()
+        private void DrawEdges(Transform transform)
         {
             foreach (var edge in edges)
             {
-                var position = edge.sourceVertex.position;
-                var direction = (edge.nextEdge.sourceVertex.position - position).normalized;
-                DrawArrow.ForGizmo(edge.sourceVertex.position, direction);
+                var position = transform.TransformPoint(edge.sourceVertex.position);
+                var direction = (transform.TransformPoint(edge.nextEdge.sourceVertex.position) - position).normalized;
+                DrawArrow.ForGizmo(position, direction);
             }
         }
 
-        private void DrawFaces()
+        private void DrawFaces(Transform transform)
         {
             foreach (var face in faces)
             {
-                var pos0 = face.edge.sourceVertex.position;
-                var pos1 = face.edge.nextEdge.sourceVertex.position;
-                var pos2 = face.edge.nextEdge.nextEdge.sourceVertex.position;
-                var pos3 = face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.position;
+                var pos0 = transform.TransformPoint(face.edge.sourceVertex.position);
+                var pos1 = transform.TransformPoint(face.edge.nextEdge.sourceVertex.position);
+                var pos2 = transform.TransformPoint(face.edge.nextEdge.nextEdge.sourceVertex.position);
+                var pos3 = transform.TransformPoint(face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.position);
+
                 Gizmos.DrawLine(pos0, pos1);
                 Gizmos.DrawLine(pos1, pos2);
                 Gizmos.DrawLine(pos2, pos3);
@@ -232,14 +233,14 @@ namespace HalfEdge
         }
 
 
-        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces)
+        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, Transform transform)
         {
             if (drawVertices)
-                DrawVertices();
+                DrawVertices(transform);
             if (drawEdges)
-                DrawEdges();
-            if(drawFaces)
-                DrawFaces();
+                DrawEdges(transform);
+            if (drawFaces)
+                DrawFaces(transform);
         }
     }
 }

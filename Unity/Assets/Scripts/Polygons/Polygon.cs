@@ -16,11 +16,14 @@ namespace Polygons
         {
             get
             {
-                _meshFilter ??= GetComponent<MeshFilter>();
+                if (!_meshFilter)
+                    _meshFilter = GetComponent<MeshFilter>();
                 return _meshFilter.mesh;
             }
             set
             {
+                if (!_meshFilter)
+                    _meshFilter = GetComponent<MeshFilter>();
                 _meshFilter.mesh = value;
                 _halfEdgeMesh = new HalfEdgeMesh(value);
                 _wingedEdgeMesh = new WingedEdgeMesh(value);
@@ -34,10 +37,10 @@ namespace Polygons
 
         private void OnDrawGizmos()
         {
-            if (!_meshFilter || !Mesh) return;
+            if (!_meshFilter || !Mesh || !Application.isPlaying) return;
 
             _halfEdgeMesh ??= new HalfEdgeMesh(Mesh);
-            _halfEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces);
+            _halfEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, transform);
 
             _wingedEdgeMesh ??= new WingedEdgeMesh(Mesh);
             _wingedEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces);
