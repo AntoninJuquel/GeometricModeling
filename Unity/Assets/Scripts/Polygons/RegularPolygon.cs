@@ -20,11 +20,11 @@ namespace Polygons
             var vertices = new Vector3[nSector * 2 + 1];
             var quads = new int[nSector * 4];
 
-            var angle = 2 * Mathf.PI / nSector;
+            var angleStep = 2 * Mathf.PI / nSector;
 
             for (var i = 0; i < nSector; i++)
             {
-                vertices[2 * i] = new Vector3(Mathf.Cos(i * angle) * halfSize.x, 0, Mathf.Sin(i * angle) * halfSize.z);
+                vertices[2 * i] = new Vector3(Mathf.Cos(i * angleStep) * halfSize.x, 0, Mathf.Sin(i * angleStep) * halfSize.z);
             }
 
             for (var i = 0; i < nSector; i++)

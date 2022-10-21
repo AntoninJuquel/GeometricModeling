@@ -222,13 +222,18 @@ namespace HalfEdge
                 var pos1 = transform.TransformPoint(face.edge.nextEdge.sourceVertex.position);
                 var pos2 = transform.TransformPoint(face.edge.nextEdge.nextEdge.sourceVertex.position);
                 var pos3 = transform.TransformPoint(face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.position);
-
+                
                 Gizmos.DrawLine(pos0, pos1);
                 Gizmos.DrawLine(pos1, pos2);
                 Gizmos.DrawLine(pos2, pos3);
                 Gizmos.DrawLine(pos3, pos0);
+                
                 Gizmos.DrawLine(pos0, pos2);
                 Gizmos.DrawLine(pos1, pos3);
+
+                var position = face.edge.sourceVertex.position;
+                var direction = (face.edge.nextEdge.sourceVertex.position - position).normalized;
+                DrawArrow.ForGizmo(position, direction);
             }
         }
 
