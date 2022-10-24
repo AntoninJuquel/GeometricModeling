@@ -66,6 +66,8 @@ namespace HalfEdge
             // Second, build faces & edged
             for (var i = 0; i < meshQuads.Length; i += 4)
             {
+                // []
+                
                 var i0 = meshQuads[i];
                 var i1 = meshQuads[i + 1];
                 var i2 = meshQuads[i + 2];

@@ -141,7 +141,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &666618639
 Transform:
   m_ObjectHideFlags: 0
@@ -222,6 +222,7 @@ MonoBehaviour:
   drawVertices: 0
   drawEdges: 0
   drawFaces: 0
+  edgeMode: 0
   startAngle: 1.0471976
   endAngle: 6.44
   halfSize: {x: 4, y: 2, z: 4}
@@ -555,7 +556,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1798872307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -568,9 +569,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a7f8c221cd88d94cabf47ff917ea1a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  drawVertices: 0
-  drawEdges: 0
+  drawVertices: 1
+  drawEdges: 1
   drawFaces: 0
+  edgeMode: 1
   halfSize: {x: 4, y: 2, z: 3}
 --- !u!23 &1798872308
 MeshRenderer:
@@ -671,6 +673,7 @@ MonoBehaviour:
   drawVertices: 0
   drawEdges: 0
   drawFaces: 0
+  edgeMode: 0
   halfSize: {x: 4, y: 2, z: 3}
 --- !u!23 &1892871848
 MeshRenderer:
@@ -755,7 +758,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &2121492995
 Transform:
   m_ObjectHideFlags: 0
@@ -833,8 +836,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5920981e1a81463e96ddd040dcac792c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  drawVertices: 0
-  drawEdges: 0
+  drawVertices: 1
+  drawEdges: 1
   drawFaces: 0
+  edgeMode: 1
   halfSize: {x: 4, y: 2, z: 4}
-  nSector: 5
+  nSector: 3
