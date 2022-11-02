@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace HalfEdge
@@ -31,6 +33,14 @@ namespace HalfEdge
             this.sourceVertex = sourceVertex;
             sourceVertex.outgoingEdge = this;
         }
+
+        public Vector3 GetCenter(out Vector3 pos0, out Vector3 pos1)
+        {
+            pos0 = sourceVertex.position;
+            pos1 = nextEdge.sourceVertex.position;
+
+            return (pos0 + pos1) / 2f;
+        }
     }
 
     public class Face
@@ -43,6 +53,16 @@ namespace HalfEdge
             this.index = index;
             this.edge = edge;
         }
+
+        public Vector3 GetCentroid(out Vector3 pos0, out Vector3 pos1, out Vector3 pos2, out Vector3 pos3)
+        {
+            pos0 = edge.sourceVertex.position;
+            pos1 = edge.nextEdge.sourceVertex.position;
+            pos2 = edge.nextEdge.nextEdge.sourceVertex.position;
+            pos3 = edge.nextEdge.nextEdge.nextEdge.sourceVertex.position;
+
+            return (pos0 + pos1 + pos2 + pos3) / 4f;
+        }
     }
 
     public class HalfEdgeMesh
@@ -50,6 +70,12 @@ namespace HalfEdge
         public List<Vertex> vertices = new();
         public List<HalfEdge> edges = new();
         public List<Face> faces = new();
+
+        public Vector3 GetCentroid()
+        {
+            var res = vertices.Aggregate(Vector3.zero, (current, vertex) => current + vertex.position);
+            return res / vertices.Count;
+        }
 
         public HalfEdgeMesh(Mesh mesh)
         {
@@ -67,7 +93,7 @@ namespace HalfEdge
             for (var i = 0; i < meshQuads.Length; i += 4)
             {
                 // []
-                
+
                 var i0 = meshQuads[i];
                 var i1 = meshQuads[i + 1];
                 var i2 = meshQuads[i + 2];
@@ -197,50 +223,79 @@ namespace HalfEdge
 
         private void DrawVertices(Transform transform)
         {
+            var style = new GUIStyle
+            {
+                fontSize = 15,
+                normal =
+                {
+                    textColor = Color.red
+                }
+            };
+
             foreach (var vertex in vertices)
             {
                 var position = transform.TransformPoint(vertex.position);
-                Gizmos.DrawSphere(position, .1f);
-                var direction = (transform.TransformPoint(vertex.outgoingEdge.nextEdge.sourceVertex.position) - position).normalized;
-                DrawArrow.ForGizmo(position, direction);
+                Gizmos.DrawSphere(position, .05f);
+                Handles.Label(position, $"Vertex {vertex.index}", style);
             }
         }
 
         private void DrawEdges(Transform transform)
         {
+            var style = new GUIStyle
+            {
+                fontSize = 15,
+                normal =
+                {
+                    textColor = Color.red
+                }
+            };
+
             foreach (var edge in edges)
             {
-                var position = transform.TransformPoint(edge.sourceVertex.position);
-                var direction = (transform.TransformPoint(edge.nextEdge.sourceVertex.position) - position).normalized;
-                DrawArrow.ForGizmo(position, direction);
+                var centroid = transform.TransformPoint(edge.face.GetCentroid(out var pos0, out var pos1, out var pos2, out var pos3));
+                var p0 = transform.TransformPoint(edge.sourceVertex.position);
+                var p1 = transform.TransformPoint(edge.nextEdge.sourceVertex.position);
+                var center = (p0 + p1) / 2f;
+
+                var perpendicular = (centroid - center).normalized;
+
+                var direction = (p1 - p0);
+                DrawArrow.ForGizmo(p0 + (perpendicular * .1f), direction, .1f);
+                Handles.Label(center + (perpendicular * .1f), $"Edge {edge.index}", style);
             }
         }
 
         private void DrawFaces(Transform transform)
         {
+            var style = new GUIStyle
+            {
+                fontSize = 15,
+                normal =
+                {
+                    textColor = Color.red
+                }
+            };
+
             foreach (var face in faces)
             {
-                var pos0 = transform.TransformPoint(face.edge.sourceVertex.position);
-                var pos1 = transform.TransformPoint(face.edge.nextEdge.sourceVertex.position);
-                var pos2 = transform.TransformPoint(face.edge.nextEdge.nextEdge.sourceVertex.position);
-                var pos3 = transform.TransformPoint(face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.position);
-                
+                var centroid = transform.TransformPoint(face.GetCentroid(out var pos0, out var pos1, out var pos2, out var pos3));
+                pos0 = transform.TransformPoint(pos0);
+                pos1 = transform.TransformPoint(pos1);
+                pos2 = transform.TransformPoint(pos2);
+                pos3 = transform.TransformPoint(pos3);
+
                 Gizmos.DrawLine(pos0, pos1);
                 Gizmos.DrawLine(pos1, pos2);
                 Gizmos.DrawLine(pos2, pos3);
                 Gizmos.DrawLine(pos3, pos0);
-                
-                Gizmos.DrawLine(pos0, pos2);
-                Gizmos.DrawLine(pos1, pos3);
 
-                var position = face.edge.sourceVertex.position;
-                var direction = (face.edge.nextEdge.sourceVertex.position - position).normalized;
-                DrawArrow.ForGizmo(position, direction);
+                Handles.Label(centroid, $"Face {face.index}", style);
             }
         }
 
 
-        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, Transform transform)
+        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, Transform transform)
         {
             if (drawVertices)
                 DrawVertices(transform);
@@ -248,6 +303,8 @@ namespace HalfEdge
                 DrawEdges(transform);
             if (drawFaces)
                 DrawFaces(transform);
+            if (drawCentroid)
+                Gizmos.DrawSphere(transform.TransformPoint(GetCentroid()), 1f);
         }
     }
 }

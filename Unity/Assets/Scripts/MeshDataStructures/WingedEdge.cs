@@ -200,6 +200,7 @@ namespace WingedEdge
                 // var pos1 = transform.TransformPoint(face.edge.endVertex.position);
                 // var pos2 = transform.TransformPoint(face.edge.startCWEdge.endVertex.position);
                 // var pos3 = transform.TransformPoint(face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.position);
+
                 //
                 // Gizmos.DrawLine(pos0, pos1);
                 // Gizmos.DrawLine(pos1, pos2);
