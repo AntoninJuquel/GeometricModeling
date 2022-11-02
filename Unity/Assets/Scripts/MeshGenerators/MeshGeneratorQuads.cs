@@ -71,7 +71,7 @@ public class MeshGeneratorQuads : MonoBehaviour
         var vertices = _mMf.mesh.vertices;
         var quads = _mMf.mesh.GetIndices(0);
 
-        var strings = vertices.Select((pos, i) => $"{i}{separator}{pos.x:N03} {pos.y:N03} {pos.z:N03}{separator}{separator}").ToList();
+        var strings = vertices.Select((pos, i) => $"{i}{separator}{pos.x:N03} {pos.y:N03} {pos.z:N03}{separator}").ToList();
 
         for (var i = vertices.Length; i < quads.Length / 4; i++)
             strings.Add(separator + separator + separator);

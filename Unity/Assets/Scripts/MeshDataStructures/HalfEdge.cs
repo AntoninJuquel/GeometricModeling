@@ -184,6 +184,8 @@ namespace HalfEdge
                 edges.Add(edge3);
                 faces.Add(face);
             }
+
+            GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
 
         public Mesh ConvertToFaceVertexMesh()
@@ -214,11 +216,28 @@ namespace HalfEdge
             return faceVertexMesh;
         }
 
-        public string ConvertToCSVFormat(string separator = "\t")
+        private string ConvertToCsv(string separator)
         {
-            string str = "";
-            //magic happens
-            return str;
+            var strings = vertices.Select((vertex, i) => $"{i}{separator}{vertex.position.x:N03} {vertex.position.y:N03} {vertex.position.z:N03}{separator}{vertex.outgoingEdge.index}{separator}{separator}{separator}{separator}").ToList();
+
+            for (var i = vertices.Count; i < edges.Count; i++)
+                strings.Add(string.Format("{0}{0}{0}{0}{0}{0}{0}{0}", separator));
+
+            for (var i = 0; i < edges.Count; i++)
+            {
+                var twinEdge = edges[i].twinEdge != null ? edges[i].twinEdge.index.ToString() : "N/A";
+                strings[i] += $"{i}{separator}{edges[i].sourceVertex.index}{separator}{separator}{edges[i].face.index}{separator}{separator}{edges[i].prevEdge.index}{separator}{separator}{edges[i].nextEdge.index}{separator}{separator}{twinEdge}{separator}{separator}";
+            }
+            
+            for (var i = Mathf.Max(vertices.Count, edges.Count); i < faces.Count; i++)
+                strings.Add(string.Format("{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}", separator));
+
+            for (var i = 0; i < faces.Count; i++)
+            {
+                strings[i] += $"{i}{separator}{faces[i].edge.index}";
+            }
+
+            return $"Vertices{separator}{separator}{separator}{separator}{separator}{separator}{separator}Half-Edges{separator}{separator}{separator}{separator}{separator}{separator}{separator}{separator}{separator}{separator}Faces\nIndex{separator}Position{separator}{separator}Outgoing-edge-index{separator}{separator}Index{separator}Vertex-index{separator}Face-index{separator}Prev-Edge{separator}Next-Edge{separator}Twin-Edge{separator}Index{separator}Edge-index\n{string.Join("\n", strings)}";
         }
 
         private void DrawVertices(Transform transform)
