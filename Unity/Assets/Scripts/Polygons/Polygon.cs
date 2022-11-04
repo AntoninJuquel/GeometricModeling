@@ -18,7 +18,7 @@ namespace Polygons
     {
         [SerializeField] private bool drawVertices, drawEdges, drawFaces, drawCentroid;
         [SerializeField] private Edges edgeMode;
-        private HalfEdgeMesh _halfEdgeMesh;
+        [SerializeField] private HalfEdgeMesh _halfEdgeMesh;
         private WingedEdgeMesh _wingedEdgeMesh;
         private MeshFilter _meshFilter;
 

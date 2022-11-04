@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace HalfEdge
 {
+    public delegate void EdgeDelegate(HalfEdge edge);
+
     public class Vertex
     {
         public int index;
@@ -16,12 +18,24 @@ namespace HalfEdge
             this.index = index;
             this.position = position;
         }
+
+        public void TraverseAdjacentEdges(EdgeDelegate edgeDelegate)
+        {
+            var start = outgoingEdge;
+            var currentEdge = start;
+            do
+            {
+                edgeDelegate(currentEdge);
+                currentEdge = currentEdge.prevEdge.twinEdge;
+            } while (currentEdge != start);
+        }
     }
 
     public class HalfEdge
     {
         public int index;
         public Vertex sourceVertex;
+        public Vertex endVertex => nextEdge.sourceVertex;
         public Face face;
         public HalfEdge prevEdge;
         public HalfEdge nextEdge;
@@ -56,15 +70,13 @@ namespace HalfEdge
         public int index;
         public HalfEdge edge;
 
-        public delegate void EdgeDelegate(HalfEdge edge);
-
         public Face(int index, HalfEdge edge)
         {
             this.index = index;
             this.edge = edge;
         }
 
-        public void TraverseFaceEdges(EdgeDelegate edgeDelegate)
+        public void TraverseEdges(EdgeDelegate edgeDelegate)
         {
             var start = edge;
             var currentEdge = start;
@@ -79,7 +91,7 @@ namespace HalfEdge
         {
             var sum = Vector3.zero;
             var iteration = 0;
-            TraverseFaceEdges(currentEdge =>
+            TraverseEdges(currentEdge =>
             {
                 sum += currentEdge.sourceVertex.position;
                 iteration++;
@@ -88,6 +100,7 @@ namespace HalfEdge
         }
     }
 
+    [System.Serializable]
     public class HalfEdgeMesh
     {
         public List<Vertex> vertices = new();
@@ -109,6 +122,7 @@ namespace HalfEdge
             for (var i = 0; i < meshVertices.Length; i++)
             {
                 vertices.Add(new Vertex(i, meshVertices[i]));
+                VertexInspectors.Add(new VertexInspector());
             }
 
             Dictionary<(int, int), HalfEdge> edgesDictionary = new();
@@ -186,6 +200,40 @@ namespace HalfEdge
                 faces.Add(face);
             }
 
+            Dictionary<int, HalfEdge> startVertexEdgesDictionary = new();
+            Dictionary<int, HalfEdge> endVertexEdgesDictionary = new();
+
+            for (var i = 0; i < edges.Count; i++)
+            {
+                if (edges[i].twinEdge != null) continue;
+
+                var startVertex = edges[i].endVertex;
+                var endVertex = edges[i].sourceVertex;
+
+                var twin = new HalfEdge(edges.Count, startVertex)
+                {
+                    twinEdge = edges[i]
+                };
+                edges[i].twinEdge = twin;
+
+                startVertexEdgesDictionary.Add(startVertex.index, twin);
+                endVertexEdgesDictionary.Add(endVertex.index, twin);
+
+                if (startVertexEdgesDictionary.TryGetValue(endVertex.index, out var nextEdge))
+                {
+                    nextEdge.prevEdge = twin;
+                    twin.nextEdge = nextEdge;
+                }
+
+                if (endVertexEdgesDictionary.TryGetValue(startVertex.index, out var previousEdge))
+                {
+                    previousEdge.nextEdge = twin;
+                    twin.prevEdge = previousEdge;
+                }
+
+                edges.Add(twin);
+            }
+
             GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
 
@@ -205,7 +253,7 @@ namespace HalfEdge
             index = 0;
             foreach (var face in faces)
             {
-                face.TraverseFaceEdges(currentEdge => meshQuads[index++] = currentEdge.index);
+                face.TraverseEdges(currentEdge => meshQuads[index++] = currentEdge.index);
             }
 
             faceVertexMesh.vertices = meshVertices;
@@ -223,8 +271,8 @@ namespace HalfEdge
 
             for (var i = 0; i < edges.Count; i++)
             {
-                var twinEdge = edges[i].twinEdge != null ? edges[i].twinEdge.index.ToString() : "NULL";
-                strings[i] += $"{i}{separator}{edges[i].sourceVertex.index}{separator}{edges[i].face.index}{separator}{edges[i].prevEdge.index}{separator}{edges[i].nextEdge.index}{separator}{twinEdge}{separator}{separator}";
+                var faceIndex = edges[i].face != null ? edges[i].face.index.ToString() : "∅";
+                strings[i] += $"{i}{separator}{edges[i].sourceVertex.index}{separator}{faceIndex}{separator}{edges[i].prevEdge.index}{separator}{edges[i].nextEdge.index}{separator}{edges[i].twinEdge.index}{separator}{separator}";
             }
 
             for (var i = Mathf.Max(vertices.Count, edges.Count); i < faces.Count; i++)
@@ -245,41 +293,43 @@ namespace HalfEdge
                 fontSize = 15,
                 normal =
                 {
-                    textColor = Color.red
+                    textColor = Color.black
                 }
             };
 
             foreach (var vertex in vertices)
             {
                 var position = transform.TransformPoint(vertex.position);
-                Gizmos.DrawSphere(position, .05f);
+                Gizmos.color = Color.black;
+                Gizmos.DrawSphere(position, .1f);
                 Handles.Label(position, $"Vertex {vertex.index}", style);
             }
         }
 
         private void DrawEdges(Transform transform)
         {
-            var style = new GUIStyle
-            {
-                fontSize = 15,
-                normal =
-                {
-                    textColor = Color.red
-                }
-            };
-
             foreach (var edge in edges)
             {
-                var centroid = transform.TransformPoint(edge.face.GetCentroid());
+                var isBorder = edge.face == null;
+
+                var centroid = transform.TransformPoint(isBorder ? edge.twinEdge.face.GetCentroid() : edge.face.GetCentroid());
                 var p0 = transform.TransformPoint(edge.sourceVertex.position);
-                var p1 = transform.TransformPoint(edge.nextEdge.sourceVertex.position);
+                var p1 = transform.TransformPoint(edge.endVertex.position);
                 var center = (p0 + p1) / 2f;
 
-                var perpendicular = (centroid - center).normalized;
+                var perpendicular = (isBorder ? center - centroid : centroid - center).normalized;
 
                 var direction = (p1 - p0);
+                Gizmos.color = isBorder ? Color.red : Color.blue;
                 DrawArrow.ForGizmo(p0 + (perpendicular * .1f), direction, .1f);
-                Handles.Label(center + (perpendicular * .1f), $"Edge {edge.index}", style);
+                Handles.Label(center + (perpendicular * .1f), $"Edge {edge.index}", new GUIStyle
+                {
+                    fontSize = 15,
+                    normal =
+                    {
+                        textColor = Gizmos.color
+                    }
+                });
             }
         }
 
@@ -290,20 +340,36 @@ namespace HalfEdge
                 fontSize = 15,
                 normal =
                 {
-                    textColor = Color.red
+                    textColor = Color.green
                 }
             };
 
             foreach (var face in faces)
             {
-                face.TraverseFaceEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.sourceVertex.position), transform.TransformPoint(currentEdge.nextEdge.sourceVertex.position)));
+                Gizmos.color = Color.green;
+                face.TraverseEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.sourceVertex.position), transform.TransformPoint(currentEdge.nextEdge.sourceVertex.position)));
                 Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.index}", style);
             }
         }
 
+        [System.Serializable]
+        public struct VertexInspector
+        {
+            public bool drawGizmos;
+        }
+
+        [SerializeField] public List<VertexInspector> VertexInspectors = new();
 
         public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, Transform transform)
         {
+            for (var i = 0; i < VertexInspectors.Count; i++)
+            {
+                if (!VertexInspectors[i].drawGizmos) continue;
+                Gizmos.color = Color.red;
+                Gizmos.DrawSphere(transform.TransformPoint(vertices[i].position), .1f);
+                vertices[i].TraverseAdjacentEdges(currentEdge => { Gizmos.DrawLine(transform.TransformPoint(currentEdge.sourceVertex.position), transform.TransformPoint(currentEdge.endVertex.position)); });
+            }
+
             if (drawVertices)
                 DrawVertices(transform);
             if (drawEdges)
@@ -311,7 +377,10 @@ namespace HalfEdge
             if (drawFaces)
                 DrawFaces(transform);
             if (drawCentroid)
-                Gizmos.DrawSphere(transform.TransformPoint(GetCentroid()), 1f);
+            {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawSphere(transform.TransformPoint(GetCentroid()), .5f);
+            }
         }
     }
 }
