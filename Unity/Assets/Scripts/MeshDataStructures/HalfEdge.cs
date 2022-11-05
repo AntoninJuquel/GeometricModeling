@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -9,57 +10,65 @@ namespace HalfEdge
 
     public class Vertex
     {
-        public int index;
-        public Vector3 position;
-        public HalfEdge outgoingEdge;
+        public int Index;
+        public Vector3 Position;
+        public HalfEdge OutgoingEdge;
+
+        public bool InBorder
+        {
+            get
+            {
+                var yes = false;
+                TraverseAdjacentEdges(edge =>
+                {
+                    if (edge.InBorder)
+                        yes = true;
+                });
+
+                return yes;
+            }
+        }
 
         public Vertex(int index, Vector3 position)
         {
-            this.index = index;
-            this.position = position;
+            Index = index;
+            Position = position;
         }
 
         public void TraverseAdjacentEdges(EdgeDelegate edgeDelegate)
         {
-            var start = outgoingEdge;
+            var start = OutgoingEdge;
             var currentEdge = start;
             do
             {
                 edgeDelegate(currentEdge);
-                currentEdge = currentEdge.prevEdge.twinEdge;
+                currentEdge = currentEdge.PrevEdge.TwinEdge;
             } while (currentEdge != start);
         }
     }
 
     public class HalfEdge
     {
-        public int index;
-        public Vertex sourceVertex;
-        public Vertex endVertex => nextEdge.sourceVertex;
-        public Face face;
-        public HalfEdge prevEdge;
-        public HalfEdge nextEdge;
-        public HalfEdge twinEdge;
+        public int Index;
+        public Vertex SourceVertex;
+        public Vertex EndVertex => NextEdge.SourceVertex;
+        public Face Face;
+        public HalfEdge PrevEdge;
+        public HalfEdge NextEdge;
+        public HalfEdge TwinEdge;
+        public bool InBorder => Face == null || TwinEdge.Face == null;
 
         public HalfEdge(int index, Vertex sourceVertex)
         {
-            this.index = index;
-            this.sourceVertex = sourceVertex;
-            sourceVertex.outgoingEdge ??= this;
+            Index = index;
+            SourceVertex = sourceVertex;
+            sourceVertex.OutgoingEdge ??= this;
         }
 
         public Vector3 GetCenter()
         {
-            var pos0 = sourceVertex.position;
-            var pos1 = nextEdge.sourceVertex.position;
-
-            return (pos0 + pos1) / 2f;
-        }
-
-        public Vector3 GetCenter(out Vector3 pos0, out Vector3 pos1)
-        {
-            pos0 = sourceVertex.position;
-            pos1 = nextEdge.sourceVertex.position;
+            var pos0 = SourceVertex.Position;
+            var pos1 = NextEdge.SourceVertex.Position;
 
             return (pos0 + pos1) / 2f;
         }
@@ -67,23 +76,34 @@ namespace HalfEdge
 
     public class Face
     {
-        public int index;
-        public HalfEdge edge;
+        public int Index;
+        public HalfEdge Edge;
 
         public Face(int index, HalfEdge edge)
         {
-            this.index = index;
-            this.edge = edge;
+            Index = index;
+            Edge = edge;
         }
 
-        public void TraverseEdges(EdgeDelegate edgeDelegate)
+        public void TraverseEdgesCW(EdgeDelegate edgeDelegate)
         {
-            var start = edge;
+            var start = Edge;
             var currentEdge = start;
             do
             {
                 edgeDelegate(currentEdge);
-                currentEdge = currentEdge.nextEdge;
+                currentEdge = currentEdge.NextEdge;
+            } while (currentEdge != start);
+        }
+
+        public void TraverseEdgesCWW(EdgeDelegate edgeDelegate)
+        {
+            var start = Edge;
+            var currentEdge = start;
+            do
+            {
+                edgeDelegate(currentEdge);
+                currentEdge = currentEdge.PrevEdge;
             } while (currentEdge != start);
         }
 
@@ -91,9 +111,9 @@ namespace HalfEdge
         {
             var sum = Vector3.zero;
             var iteration = 0;
-            TraverseEdges(currentEdge =>
+            TraverseEdgesCW(currentEdge =>
             {
-                sum += currentEdge.sourceVertex.position;
+                sum += currentEdge.SourceVertex.Position;
                 iteration++;
             });
             return sum / iteration;
@@ -103,14 +123,14 @@ namespace HalfEdge
     [System.Serializable]
     public class HalfEdgeMesh
     {
-        public List<Vertex> vertices = new();
-        public List<HalfEdge> edges = new();
-        public List<Face> faces = new();
+        public List<Vertex> Vertices = new();
+        public List<HalfEdge> Edges = new();
+        public List<Face> Faces = new();
 
         public Vector3 GetCentroid()
         {
-            var res = vertices.Aggregate(Vector3.zero, (current, vertex) => current + vertex.position);
-            return res / vertices.Count;
+            var res = Vertices.Aggregate(Vector3.zero, (current, vertex) => current + vertex.Position);
+            return res / Vertices.Count;
         }
 
         public HalfEdgeMesh(Mesh mesh)
@@ -121,8 +141,7 @@ namespace HalfEdge
             // First, get vertices
             for (var i = 0; i < meshVertices.Length; i++)
             {
-                vertices.Add(new Vertex(i, meshVertices[i]));
-                VertexInspectors.Add(new VertexInspector());
+                Vertices.Add(new Vertex(i, meshVertices[i]));
             }
 
             Dictionary<(int, int), HalfEdge> edgesDictionary = new();
@@ -139,22 +158,22 @@ namespace HalfEdge
                 var i2I3 = (Mathf.Min(i2, i3), Mathf.Max(i2, i3));
                 var i3I0 = (Mathf.Min(i3, i0), Mathf.Max(i3, i0));
 
-                var edge0 = new HalfEdge(i, vertices[i0]);
-                var edge1 = new HalfEdge(i + 1, vertices[i1]);
-                var edge2 = new HalfEdge(i + 2, vertices[i2]);
-                var edge3 = new HalfEdge(i + 3, vertices[i3]);
+                var edge0 = new HalfEdge(i, Vertices[i0]);
+                var edge1 = new HalfEdge(i + 1, Vertices[i1]);
+                var edge2 = new HalfEdge(i + 2, Vertices[i2]);
+                var edge3 = new HalfEdge(i + 3, Vertices[i3]);
 
-                var face = new Face(faces.Count, edge0);
+                var face = new Face(Faces.Count, edge0);
 
-                edge0.prevEdge = edge2.nextEdge = edge3;
-                edge1.prevEdge = edge3.nextEdge = edge0;
-                edge2.prevEdge = edge0.nextEdge = edge1;
-                edge3.prevEdge = edge1.nextEdge = edge2;
+                edge0.PrevEdge = edge2.NextEdge = edge3;
+                edge1.PrevEdge = edge3.NextEdge = edge0;
+                edge2.PrevEdge = edge0.NextEdge = edge1;
+                edge3.PrevEdge = edge1.NextEdge = edge2;
 
                 if (edgesDictionary.TryGetValue(i0I1, out var e0))
                 {
-                    edge0.twinEdge = e0;
-                    e0.twinEdge = edge0;
+                    edge0.TwinEdge = e0;
+                    e0.TwinEdge = edge0;
                 }
                 else
                 {
@@ -163,8 +182,8 @@ namespace HalfEdge
 
                 if (edgesDictionary.TryGetValue(i1I2, out var e1))
                 {
-                    edge1.twinEdge = e1;
-                    e1.twinEdge = edge1;
+                    edge1.TwinEdge = e1;
+                    e1.TwinEdge = edge1;
                 }
                 else
                 {
@@ -173,8 +192,8 @@ namespace HalfEdge
 
                 if (edgesDictionary.TryGetValue(i2I3, out var e2))
                 {
-                    edge2.twinEdge = e2;
-                    e2.twinEdge = edge2;
+                    edge2.TwinEdge = e2;
+                    e2.TwinEdge = edge2;
                 }
                 else
                 {
@@ -183,77 +202,295 @@ namespace HalfEdge
 
                 if (edgesDictionary.TryGetValue(i3I0, out var e3))
                 {
-                    edge3.twinEdge = e3;
-                    e3.twinEdge = edge3;
+                    edge3.TwinEdge = e3;
+                    e3.TwinEdge = edge3;
                 }
                 else
                 {
                     edgesDictionary.Add(i3I0, edge3);
                 }
 
-                edge0.face = edge1.face = edge2.face = edge3.face = face;
+                edge0.Face = edge1.Face = edge2.Face = edge3.Face = face;
 
-                edges.Add(edge0);
-                edges.Add(edge1);
-                edges.Add(edge2);
-                edges.Add(edge3);
-                faces.Add(face);
+                Edges.Add(edge0);
+                Edges.Add(edge1);
+                Edges.Add(edge2);
+                Edges.Add(edge3);
+                Faces.Add(face);
             }
 
             Dictionary<int, HalfEdge> startVertexEdgesDictionary = new();
             Dictionary<int, HalfEdge> endVertexEdgesDictionary = new();
 
-            for (var i = 0; i < edges.Count; i++)
+            for (var i = 0; i < Edges.Count; i++)
             {
-                if (edges[i].twinEdge != null) continue;
+                if (Edges[i].TwinEdge != null) continue;
 
-                var startVertex = edges[i].endVertex;
-                var endVertex = edges[i].sourceVertex;
+                var startVertex = Edges[i].EndVertex;
+                var endVertex = Edges[i].SourceVertex;
 
-                var twin = new HalfEdge(edges.Count, startVertex)
+                var twin = new HalfEdge(Edges.Count, startVertex)
                 {
-                    twinEdge = edges[i]
+                    TwinEdge = Edges[i]
                 };
-                edges[i].twinEdge = twin;
+                Edges[i].TwinEdge = twin;
 
-                startVertexEdgesDictionary.Add(startVertex.index, twin);
-                endVertexEdgesDictionary.Add(endVertex.index, twin);
+                startVertexEdgesDictionary.Add(startVertex.Index, twin);
+                endVertexEdgesDictionary.Add(endVertex.Index, twin);
 
-                if (startVertexEdgesDictionary.TryGetValue(endVertex.index, out var nextEdge))
+                if (startVertexEdgesDictionary.TryGetValue(endVertex.Index, out var nextEdge))
                 {
-                    nextEdge.prevEdge = twin;
-                    twin.nextEdge = nextEdge;
+                    nextEdge.PrevEdge = twin;
+                    twin.NextEdge = nextEdge;
                 }
 
-                if (endVertexEdgesDictionary.TryGetValue(startVertex.index, out var previousEdge))
+                if (endVertexEdgesDictionary.TryGetValue(startVertex.Index, out var previousEdge))
                 {
-                    previousEdge.nextEdge = twin;
-                    twin.prevEdge = previousEdge;
+                    previousEdge.NextEdge = twin;
+                    twin.PrevEdge = previousEdge;
                 }
 
-                edges.Add(twin);
+                Edges.Add(twin);
             }
 
             GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
+        }
+
+        public IEnumerator SubdivideCatmullClark(bool vertex, bool edges, bool faces, float time, bool getCentroids, bool getEdgePoints, bool getVertexPoints)
+        {
+            CatmullClarkCreateNewPoints(out var facePoints, out var edgePoints, out var vertexPoints, getCentroids, getEdgePoints, getVertexPoints);
+
+            yield return new WaitForSeconds(time);
+
+            if (vertex)
+            {
+                Debug.Log("Displacing points");
+                for (var i = 0; i < Vertices.Count; i++)
+                {
+                    yield return new WaitForSeconds(time);
+                    Vertices[i].Position = vertexPoints[i];
+                }
+            }
+
+            if (edges)
+            {
+                Debug.Log("Displacing edges");
+                HashSet<(int, int)> edgesDictionary = new();
+
+                for (var i = 0; i < edgePoints.Count; i++)
+                {
+                    yield return new WaitForSeconds(time);
+                    var key = (Mathf.Min(Edges[i].SourceVertex.Index, Edges[i].EndVertex.Index), Mathf.Max(Edges[i].SourceVertex.Index, Edges[i].EndVertex.Index));
+
+                    if (!edgesDictionary.Contains(key))
+                    {
+                        SplitEdge(Edges[i], edgePoints[i]);
+                        edgesDictionary.Add((Mathf.Min(Edges[^2].SourceVertex.Index, Edges[^2].EndVertex.Index), Mathf.Max(Edges[^2].SourceVertex.Index, Edges[^2].EndVertex.Index)));
+                    }
+                }
+
+                foreach (var edge in Edges)
+                {
+                    edge.NextEdge.PrevEdge = edge;
+                }
+            }
+
+            if (faces)
+            {
+                Debug.Log("Displacing faces");
+                for (var i = 0; i < facePoints.Count; i++)
+                {
+                    yield return new WaitForSeconds(time);
+                    SplitFace(Faces[i], facePoints[i]);
+                }
+
+                foreach (var edge in Edges)
+                {
+                    edge.NextEdge.PrevEdge = edge;
+                }
+            }
+
+            GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
+        }
+
+        public void CatmullClarkCreateNewPoints(out List<Vector3> facePoints, out List<Vector3> edgePoints, out List<Vector3> vertexPoints, bool getCentroids, bool getEdgePoints, bool getVertexPoints)
+        {
+            facePoints = new List<Vector3>();
+            if (getCentroids)
+            {
+                Debug.Log("Getting centroids");
+                facePoints = Faces.Select(face => face.GetCentroid()).ToList();
+            }
+
+            edgePoints = new List<Vector3>();
+            if (getEdgePoints)
+            {
+                Debug.Log("Calculating edgePoints");
+                foreach (var edge in Edges)
+                {
+                    if (edge.InBorder)
+                    {
+                        edgePoints.Add(edge.GetCenter());
+                    }
+                    else
+                    {
+                        edgePoints.Add((edge.SourceVertex.Position + edge.EndVertex.Position + edge.Face.GetCentroid() + edge.TwinEdge.Face.GetCentroid()) / 4f);
+                    }
+                }
+            }
+
+            vertexPoints = new List<Vector3>();
+            if (getVertexPoints)
+            {
+                Debug.Log("Calculating vertexPoints");
+                foreach (var vertex in Vertices)
+                {
+                    if (vertex.InBorder)
+                    {
+                        var sum = vertex.Position;
+                        var nb = 1;
+
+                        vertex.TraverseAdjacentEdges(edge =>
+                        {
+                            if (edge.InBorder)
+                            {
+                                sum += edge.GetCenter();
+                                nb++;
+                            }
+                        });
+
+                        vertexPoints.Add(sum / nb);
+                    }
+                    else
+                    {
+                        var n = 0;
+                        var Q = Vector3.zero;
+                        var R = Vector3.zero;
+                        var V = vertex.Position;
+
+                        vertex.TraverseAdjacentEdges(edge =>
+                        {
+                            Q += edge.Face.GetCentroid();
+                            R += edge.GetCenter();
+                            n++;
+                        });
+
+                        Q /= n;
+                        R /= n;
+
+                        vertexPoints.Add((Q + 2f * R + (n - 3f) * V) / n);
+                    }
+                }
+            }
+        }
+
+        public void SplitEdge(HalfEdge edge, Vector3 splittingPoint)
+        {
+            var newVertex = new Vertex(Vertices.Count, splittingPoint);
+            Vertices.Add(newVertex);
+
+            var nextEdge = new HalfEdge(Edges.Count, newVertex)
+            {
+                NextEdge = edge.NextEdge,
+                Face = edge.Face,
+                TwinEdge = edge.TwinEdge
+            };
+            edge.NextEdge = nextEdge;
+            Edges.Add(nextEdge);
+
+            var nextTwinEdge = new HalfEdge(Edges.Count, newVertex)
+            {
+                NextEdge = edge.TwinEdge.NextEdge,
+                Face = edge.TwinEdge.Face,
+                TwinEdge = edge
+            };
+            edge.TwinEdge.NextEdge = nextTwinEdge;
+            Edges.Add(nextTwinEdge);
+
+            edge.TwinEdge.TwinEdge = nextEdge;
+            edge.TwinEdge = nextTwinEdge;
+        }
+
+        public void SplitFace(Face face, Vector3 splittingPoint)
+        {
+            var newVertex = new Vertex(Vertices.Count, splittingPoint);
+            Vertices.Add(newVertex);
+            var start = face.Edge;
+            var currentEdge = start;
+            var index = 0;
+            Dictionary<(int, int), HalfEdge> edgesDictionary = new();
+            do
+            {
+                if (index % 2 == 0)
+                {
+                    var currentFace = face;
+
+                    if (index != 0)
+                    {
+                        currentFace = new Face(Faces.Count, currentEdge);
+                        Faces.Add(currentFace);
+                    }
+
+                    var previousEdge = new HalfEdge(Edges.Count, newVertex)
+                    {
+                        NextEdge = currentEdge.PrevEdge,
+                        Face = currentFace,
+                    };
+                    var key = (Mathf.Min(previousEdge.SourceVertex.Index, previousEdge.EndVertex.Index), Mathf.Max(previousEdge.SourceVertex.Index, previousEdge.EndVertex.Index));
+                    if (edgesDictionary.TryGetValue(key, out var previousEdgeTwin))
+                    {
+                        previousEdge.TwinEdge = previousEdgeTwin;
+                        previousEdgeTwin.TwinEdge = previousEdge;
+                    }
+                    else
+                    {
+                        edgesDictionary.Add(key, previousEdge);
+                    }
+
+                    Edges.Add(previousEdge);
+
+                    var nextEdge = new HalfEdge(Edges.Count, currentEdge.EndVertex)
+                    {
+                        NextEdge = previousEdge,
+                        Face = currentFace,
+                    };
+                    key = (Mathf.Min(nextEdge.SourceVertex.Index, nextEdge.EndVertex.Index), Mathf.Max(nextEdge.SourceVertex.Index, nextEdge.EndVertex.Index));
+                    if (edgesDictionary.TryGetValue(key, out var nextEdgeTwin))
+                    {
+                        nextEdge.TwinEdge = nextEdgeTwin;
+                        nextEdgeTwin.TwinEdge = nextEdge;
+                    }
+                    else
+                    {
+                        edgesDictionary.Add(key, nextEdge);
+                    }
+
+                    Edges.Add(nextEdge);
+                    currentEdge.NextEdge = nextEdge;
+                    currentEdge.Face = currentEdge.PrevEdge.Face = currentFace;
+                }
+
+                index++;
+                currentEdge = currentEdge.PrevEdge;
+            } while (currentEdge != start);
         }
 
         public Mesh ConvertToFaceVertexMesh()
         {
             Mesh faceVertexMesh = new Mesh();
 
-            var meshVertices = new Vector3[vertices.Count];
-            var meshQuads = new int[faces.Count * 4];
+            var meshVertices = new Vector3[Vertices.Count];
+            var meshQuads = new List<int>();
 
             var index = 0;
-            foreach (var vertex in vertices)
+            foreach (var vertex in Vertices)
             {
-                meshVertices[index++] = vertex.position;
+                meshVertices[index++] = vertex.Position;
             }
 
-            index = 0;
-            foreach (var face in faces)
+            foreach (var face in Faces)
             {
-                face.TraverseEdges(currentEdge => meshQuads[index++] = currentEdge.index);
+                face.TraverseEdgesCW(currentEdge => meshQuads.Add(currentEdge.SourceVertex.Index));
             }
 
             faceVertexMesh.vertices = meshVertices;
@@ -264,29 +501,33 @@ namespace HalfEdge
 
         private string ConvertToCsv(string separator)
         {
-            var strings = vertices.Select((vertex, i) => $"{i}{separator}{vertex.position.x:N03} {vertex.position.y:N03} {vertex.position.z:N03}{separator}{vertex.outgoingEdge.index}{separator}{separator}").ToList();
+            var strings = Vertices.Select((vertex, i) => $"{i}{separator}{vertex.Position.x:N03} {vertex.Position.y:N03} {vertex.Position.z:N03}{separator}{vertex.OutgoingEdge.Index}{separator}{separator}").ToList();
 
-            for (var i = vertices.Count; i < edges.Count; i++)
+            for (var i = Vertices.Count; i < Edges.Count; i++)
                 strings.Add(string.Format("{0}{0}{0}{0}", separator));
 
-            for (var i = 0; i < edges.Count; i++)
+            for (var i = 0; i < Edges.Count; i++)
             {
-                var faceIndex = edges[i].face != null ? edges[i].face.index.ToString() : "∅";
-                strings[i] += $"{i}{separator}{edges[i].sourceVertex.index}{separator}{faceIndex}{separator}{edges[i].prevEdge.index}{separator}{edges[i].nextEdge.index}{separator}{edges[i].twinEdge.index}{separator}{separator}";
+                var faceIndex = Edges[i].Face != null ? Edges[i].Face.Index.ToString() : "∅";
+                var vertexIndex = Edges[i].SourceVertex != null ? Edges[i].SourceVertex.Index.ToString() : "∅";
+                var prevIndex = Edges[i].PrevEdge != null ? Edges[i].PrevEdge.Index.ToString() : "∅";
+                var nextIndex = Edges[i].NextEdge != null ? Edges[i].NextEdge.Index.ToString() : "∅";
+                var twinIndex = Edges[i].TwinEdge != null ? Edges[i].TwinEdge.Index.ToString() : "∅";
+                strings[i] += $"{i}{separator}{vertexIndex}{separator}{faceIndex}{separator}{prevIndex}{separator}{nextIndex}{separator}{twinIndex}{separator}{separator}";
             }
 
-            for (var i = Mathf.Max(vertices.Count, edges.Count); i < faces.Count; i++)
+            for (var i = Mathf.Max(Vertices.Count, Edges.Count); i < Faces.Count; i++)
                 strings.Add(string.Format("{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}", separator));
 
-            for (var i = 0; i < faces.Count; i++)
+            for (var i = 0; i < Faces.Count; i++)
             {
-                strings[i] += $"{i}{separator}{faces[i].edge.index}";
+                strings[i] += $"{i}{separator}{Faces[i].Edge.Index}";
             }
 
             return $"Vertices{separator}{separator}{separator}{separator}Half-Edges{separator}{separator}{separator}{separator}{separator}{separator}{separator}Faces\nIndex{separator}Position{separator}Outgoing-edge-index{separator}{separator}Index{separator}Vertex-index{separator}Face-index{separator}Prev-Edge{separator}Next-Edge{separator}Twin-Edge{separator}{separator}Index{separator}Edge-index\n{string.Join("\n", strings)}";
         }
 
-        private void DrawVertices(Transform transform)
+        private void DrawVertices(bool drawHandles, Transform transform)
         {
             var style = new GUIStyle
             {
@@ -297,24 +538,25 @@ namespace HalfEdge
                 }
             };
 
-            foreach (var vertex in vertices)
+            foreach (var vertex in Vertices)
             {
-                var position = transform.TransformPoint(vertex.position);
+                var position = transform.TransformPoint(vertex.Position);
                 Gizmos.color = Color.black;
                 Gizmos.DrawSphere(position, .1f);
-                Handles.Label(position, $"Vertex {vertex.index}", style);
+                if (drawHandles)
+                    Handles.Label(position, $"Vertex {vertex.Index}", style);
             }
         }
 
-        private void DrawEdges(Transform transform)
+        private void DrawEdges(bool drawHandles, Transform transform)
         {
-            foreach (var edge in edges)
+            foreach (var edge in Edges)
             {
-                var isBorder = edge.face == null;
+                var isBorder = edge.Face == null;
 
-                var centroid = transform.TransformPoint(isBorder ? edge.twinEdge.face.GetCentroid() : edge.face.GetCentroid());
-                var p0 = transform.TransformPoint(edge.sourceVertex.position);
-                var p1 = transform.TransformPoint(edge.endVertex.position);
+                var centroid = transform.TransformPoint(isBorder ? edge.TwinEdge.Face.GetCentroid() : edge.Face.GetCentroid());
+                var p0 = transform.TransformPoint(edge.SourceVertex.Position);
+                var p1 = transform.TransformPoint(edge.EndVertex.Position);
                 var center = (p0 + p1) / 2f;
 
                 var perpendicular = (isBorder ? center - centroid : centroid - center).normalized;
@@ -322,18 +564,19 @@ namespace HalfEdge
                 var direction = (p1 - p0);
                 Gizmos.color = isBorder ? Color.red : Color.blue;
                 DrawArrow.ForGizmo(p0 + (perpendicular * .1f), direction, .1f);
-                Handles.Label(center + (perpendicular * .1f), $"Edge {edge.index}", new GUIStyle
-                {
-                    fontSize = 15,
-                    normal =
+                if (drawHandles)
+                    Handles.Label(center + (perpendicular * .1f), $"Edge {edge.Index}", new GUIStyle
                     {
-                        textColor = Gizmos.color
-                    }
-                });
+                        fontSize = 15,
+                        normal =
+                        {
+                            textColor = Gizmos.color
+                        }
+                    });
             }
         }
 
-        private void DrawFaces(Transform transform)
+        private void DrawFaces(bool drawHandles, Transform transform)
         {
             var style = new GUIStyle
             {
@@ -344,38 +587,23 @@ namespace HalfEdge
                 }
             };
 
-            foreach (var face in faces)
+            foreach (var face in Faces)
             {
                 Gizmos.color = Color.green;
-                face.TraverseEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.sourceVertex.position), transform.TransformPoint(currentEdge.nextEdge.sourceVertex.position)));
-                Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.index}", style);
+                face.TraverseEdgesCW(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.SourceVertex.Position), transform.TransformPoint(currentEdge.NextEdge.SourceVertex.Position)));
+                if (drawHandles)
+                    Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.Index}", style);
             }
         }
 
-        [System.Serializable]
-        public struct VertexInspector
+        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, bool drawHandles, Transform transform)
         {
-            public bool drawGizmos;
-        }
-
-        [SerializeField] public List<VertexInspector> VertexInspectors = new();
-
-        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, Transform transform)
-        {
-            for (var i = 0; i < VertexInspectors.Count; i++)
-            {
-                if (!VertexInspectors[i].drawGizmos) continue;
-                Gizmos.color = Color.red;
-                Gizmos.DrawSphere(transform.TransformPoint(vertices[i].position), .1f);
-                vertices[i].TraverseAdjacentEdges(currentEdge => { Gizmos.DrawLine(transform.TransformPoint(currentEdge.sourceVertex.position), transform.TransformPoint(currentEdge.endVertex.position)); });
-            }
-
             if (drawVertices)
-                DrawVertices(transform);
+                DrawVertices(drawHandles, transform);
             if (drawEdges)
-                DrawEdges(transform);
+                DrawEdges(drawHandles, transform);
             if (drawFaces)
-                DrawFaces(transform);
+                DrawFaces(drawHandles, transform);
             if (drawCentroid)
             {
                 Gizmos.color = Color.magenta;

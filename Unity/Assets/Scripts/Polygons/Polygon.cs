@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using HalfEdge;
 using UnityEditor;
 using UnityEngine;
@@ -16,11 +17,11 @@ namespace Polygons
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class Polygon : MonoBehaviour
     {
-        [SerializeField] private bool drawVertices, drawEdges, drawFaces, drawCentroid;
+        [SerializeField] private bool drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles;
         [SerializeField] private Edges edgeMode;
-        [SerializeField] private HalfEdgeMesh _halfEdgeMesh;
+        [SerializeField] protected HalfEdgeMesh _halfEdgeMesh;
         private WingedEdgeMesh _wingedEdgeMesh;
-        private MeshFilter _meshFilter;
+        protected MeshFilter _meshFilter;
 
         protected Mesh Mesh
         {
@@ -45,6 +46,25 @@ namespace Polygons
             _meshFilter = GetComponent<MeshFilter>();
         }
 
+        public bool ok;
+        public bool getCentroids, getEdgePoint, getVertexPoints, vertex, edges, faces;
+        public float time;
+
+        private void Update()
+        {
+            if (ok)
+            {
+                ok = false;
+                StartCoroutine(remesh());
+            }
+        }
+
+        IEnumerator remesh()
+        {
+            yield return _halfEdgeMesh.SubdivideCatmullClark(vertex, edges, faces, time, getCentroids, getEdgePoint, getVertexPoints);
+            _meshFilter.mesh = _halfEdgeMesh.ConvertToFaceVertexMesh();
+        }
+
         private void OnDrawGizmos()
         {
             if (!_meshFilter || !Mesh || !Application.isPlaying) return;
@@ -53,7 +73,7 @@ namespace Polygons
             {
                 case Edges.HalfEdge:
                     _halfEdgeMesh ??= new HalfEdgeMesh(Mesh);
-                    _halfEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, transform);
+                    _halfEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, transform);
                     break;
                 case Edges.WingedEdge:
                     _wingedEdgeMesh ??= new WingedEdgeMesh(Mesh);

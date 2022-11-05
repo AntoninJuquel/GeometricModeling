@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace Polygons
 {
@@ -6,12 +7,12 @@ namespace Polygons
     {
         [SerializeField] private Vector3 halfSize = new(4, 2, 4);
         [SerializeField] [Min(3)] private int nSector = 6;
-
+        
         private void Start()
         {
             Mesh = CreateRegularPolygon();
         }
-
+        
         private Mesh CreateRegularPolygon()
         {
             var mesh = new Mesh();
