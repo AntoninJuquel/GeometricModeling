@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using HalfEdge;
 using UnityEditor;
 using UnityEngine;
@@ -18,10 +19,11 @@ namespace Polygons
     public class Polygon : MonoBehaviour
     {
         [SerializeField] private bool drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles;
-        [SerializeField] private Edges edgeMode;
-        [SerializeField] protected HalfEdgeMesh _halfEdgeMesh;
+        [SerializeField] private Edges drawMode;
+        private HalfEdgeMesh _halfEdgeMesh;
         private WingedEdgeMesh _wingedEdgeMesh;
-        protected MeshFilter _meshFilter;
+        private MeshFilter _meshFilter;
+        private List<Mesh> _meshes = new();
 
         protected Mesh Mesh
         {
@@ -36,6 +38,8 @@ namespace Polygons
                 if (!_meshFilter)
                     _meshFilter = GetComponent<MeshFilter>();
                 _meshFilter.mesh = value;
+                if (!_meshes.Contains(Mesh))
+                    _meshes.Add(Mesh);
                 _halfEdgeMesh = new HalfEdgeMesh(value);
                 _wingedEdgeMesh = new WingedEdgeMesh(value);
             }
@@ -46,30 +50,28 @@ namespace Polygons
             _meshFilter = GetComponent<MeshFilter>();
         }
 
-        public bool ok;
-        public bool getCentroids, getEdgePoint, getVertexPoints, vertex, edges, faces;
-        public float time;
+        public bool Subdivide;
 
         private void Update()
         {
-            if (ok)
+            if (Subdivide)
             {
-                ok = false;
-                StartCoroutine(remesh());
+                Subdivide = false;
+                remesh();
             }
         }
 
-        IEnumerator remesh()
+        void remesh()
         {
-            yield return _halfEdgeMesh.SubdivideCatmullClark(vertex, edges, faces, time, getCentroids, getEdgePoint, getVertexPoints);
-            _meshFilter.mesh = _halfEdgeMesh.ConvertToFaceVertexMesh();
+            _halfEdgeMesh.SubdivideCatmullClark();
+            Mesh = _halfEdgeMesh.ConvertToFaceVertexMesh();
         }
 
         private void OnDrawGizmos()
         {
             if (!_meshFilter || !Mesh || !Application.isPlaying) return;
 
-            switch (edgeMode)
+            switch (drawMode)
             {
                 case Edges.HalfEdge:
                     _halfEdgeMesh ??= new HalfEdgeMesh(Mesh);

@@ -223,17 +223,11 @@ MonoBehaviour:
   drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
-  edgeMode: 0
-  _halfEdgeMesh:
-    index: 0
+  drawHandles: 0
+  drawMode: 0
+  selectedMesh: 
+  selected: 0
   ok: 0
-  getCentroids: 0
-  getEdgePoint: 0
-  getVertexPoints: 0
-  vertex: 0
-  edges: 0
-  faces: 0
-  time: 0
   startAngle: 1.0471976
   endAngle: 6.44
   halfSize: {x: 4, y: 2, z: 4}
@@ -537,8 +531,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  halfEdgeMesh:
-    index: 0
 --- !u!114 &1195160539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -586,17 +578,11 @@ MonoBehaviour:
   drawEdges: 1
   drawFaces: 0
   drawCentroid: 0
-  edgeMode: 0
-  _halfEdgeMesh:
-    index: 0
+  drawHandles: 0
+  drawMode: 0
+  selectedMesh: 
+  selected: 2
   ok: 0
-  getCentroids: 1
-  getEdgePoint: 1
-  getVertexPoints: 1
-  vertex: 1
-  edges: 1
-  faces: 1
-  time: 0
   halfSize: {x: 10, y: 10, z: 10}
 --- !u!23 &1798872308
 MeshRenderer:
@@ -698,17 +684,11 @@ MonoBehaviour:
   drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
-  edgeMode: 0
-  _halfEdgeMesh:
-    index: 0
+  drawHandles: 0
+  drawMode: 0
+  selectedMesh: 
+  selected: 0
   ok: 0
-  getCentroids: 0
-  getEdgePoint: 0
-  getVertexPoints: 0
-  vertex: 0
-  edges: 0
-  faces: 0
-  time: 0
   halfSize: {x: 4, y: 2, z: 3}
 --- !u!23 &1892871848
 MeshRenderer:
@@ -875,16 +855,10 @@ MonoBehaviour:
   drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
-  edgeMode: 0
-  _halfEdgeMesh:
-    index: 0
+  drawHandles: 0
+  drawMode: 0
+  selectedMesh: 
+  selected: 0
   ok: 0
-  getCentroids: 0
-  getEdgePoint: 0
-  getVertexPoints: 0
-  vertex: 0
-  edges: 0
-  faces: 0
-  time: 0
   halfSize: {x: 4, y: 2, z: 4}
   nSector: 3

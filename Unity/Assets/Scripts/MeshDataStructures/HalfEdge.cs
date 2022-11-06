@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -120,7 +119,6 @@ namespace HalfEdge
         }
     }
 
-    [System.Serializable]
     public class HalfEdgeMesh
     {
         public List<Vertex> Vertices = new();
@@ -256,130 +254,104 @@ namespace HalfEdge
             GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
 
-        public IEnumerator SubdivideCatmullClark(bool vertex, bool edges, bool faces, float time, bool getCentroids, bool getEdgePoints, bool getVertexPoints)
+        public void SubdivideCatmullClark()
         {
-            CatmullClarkCreateNewPoints(out var facePoints, out var edgePoints, out var vertexPoints, getCentroids, getEdgePoints, getVertexPoints);
+            CatmullClarkCreateNewPoints(out var facePoints, out var edgePoints, out var vertexPoints);
 
-            yield return new WaitForSeconds(time);
-
-            if (vertex)
+            for (var i = 0; i < Vertices.Count; i++)
             {
-                Debug.Log("Displacing points");
-                for (var i = 0; i < Vertices.Count; i++)
+                Vertices[i].Position = vertexPoints[i];
+            }
+
+            HashSet<(int, int)> edgesDictionary = new();
+            for (var i = 0; i < edgePoints.Count; i++)
+            {
+                var key = (Mathf.Min(Edges[i].SourceVertex.Index, Edges[i].EndVertex.Index), Mathf.Max(Edges[i].SourceVertex.Index, Edges[i].EndVertex.Index));
+
+                if (!edgesDictionary.Contains(key))
                 {
-                    yield return new WaitForSeconds(time);
-                    Vertices[i].Position = vertexPoints[i];
+                    SplitEdge(Edges[i], edgePoints[i]);
+                    edgesDictionary.Add((Mathf.Min(Edges[^2].SourceVertex.Index, Edges[^2].EndVertex.Index), Mathf.Max(Edges[^2].SourceVertex.Index, Edges[^2].EndVertex.Index)));
                 }
             }
 
-            if (edges)
+            foreach (var edge in Edges)
             {
-                Debug.Log("Displacing edges");
-                HashSet<(int, int)> edgesDictionary = new();
-
-                for (var i = 0; i < edgePoints.Count; i++)
-                {
-                    yield return new WaitForSeconds(time);
-                    var key = (Mathf.Min(Edges[i].SourceVertex.Index, Edges[i].EndVertex.Index), Mathf.Max(Edges[i].SourceVertex.Index, Edges[i].EndVertex.Index));
-
-                    if (!edgesDictionary.Contains(key))
-                    {
-                        SplitEdge(Edges[i], edgePoints[i]);
-                        edgesDictionary.Add((Mathf.Min(Edges[^2].SourceVertex.Index, Edges[^2].EndVertex.Index), Mathf.Max(Edges[^2].SourceVertex.Index, Edges[^2].EndVertex.Index)));
-                    }
-                }
-
-                foreach (var edge in Edges)
-                {
-                    edge.NextEdge.PrevEdge = edge;
-                }
+                edge.NextEdge.PrevEdge = edge;
             }
 
-            if (faces)
+            for (var i = 0; i < facePoints.Count; i++)
             {
-                Debug.Log("Displacing faces");
-                for (var i = 0; i < facePoints.Count; i++)
-                {
-                    yield return new WaitForSeconds(time);
-                    SplitFace(Faces[i], facePoints[i]);
-                }
-
-                foreach (var edge in Edges)
-                {
-                    edge.NextEdge.PrevEdge = edge;
-                }
+                SplitFace(Faces[i], facePoints[i]);
             }
+
+            foreach (var edge in Edges)
+            {
+                edge.NextEdge.PrevEdge = edge;
+            }
+
 
             GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
 
-        public void CatmullClarkCreateNewPoints(out List<Vector3> facePoints, out List<Vector3> edgePoints, out List<Vector3> vertexPoints, bool getCentroids, bool getEdgePoints, bool getVertexPoints)
+        public void CatmullClarkCreateNewPoints(out List<Vector3> facePoints, out List<Vector3> edgePoints, out List<Vector3> vertexPoints)
         {
             facePoints = new List<Vector3>();
-            if (getCentroids)
-            {
-                Debug.Log("Getting centroids");
-                facePoints = Faces.Select(face => face.GetCentroid()).ToList();
-            }
+
+            facePoints = Faces.Select(face => face.GetCentroid()).ToList();
+
 
             edgePoints = new List<Vector3>();
-            if (getEdgePoints)
+
+            foreach (var edge in Edges)
             {
-                Debug.Log("Calculating edgePoints");
-                foreach (var edge in Edges)
+                if (edge.InBorder)
                 {
-                    if (edge.InBorder)
-                    {
-                        edgePoints.Add(edge.GetCenter());
-                    }
-                    else
-                    {
-                        edgePoints.Add((edge.SourceVertex.Position + edge.EndVertex.Position + edge.Face.GetCentroid() + edge.TwinEdge.Face.GetCentroid()) / 4f);
-                    }
+                    edgePoints.Add(edge.GetCenter());
+                }
+                else
+                {
+                    edgePoints.Add((edge.SourceVertex.Position + edge.EndVertex.Position + edge.Face.GetCentroid() + edge.TwinEdge.Face.GetCentroid()) / 4f);
                 }
             }
 
             vertexPoints = new List<Vector3>();
-            if (getVertexPoints)
+            foreach (var vertex in Vertices)
             {
-                Debug.Log("Calculating vertexPoints");
-                foreach (var vertex in Vertices)
+                if (vertex.InBorder)
                 {
-                    if (vertex.InBorder)
+                    var sum = vertex.Position;
+                    var nb = 1;
+
+                    vertex.TraverseAdjacentEdges(edge =>
                     {
-                        var sum = vertex.Position;
-                        var nb = 1;
-
-                        vertex.TraverseAdjacentEdges(edge =>
+                        if (edge.InBorder)
                         {
-                            if (edge.InBorder)
-                            {
-                                sum += edge.GetCenter();
-                                nb++;
-                            }
-                        });
+                            sum += edge.GetCenter();
+                            nb++;
+                        }
+                    });
 
-                        vertexPoints.Add(sum / nb);
-                    }
-                    else
+                    vertexPoints.Add(sum / nb);
+                }
+                else
+                {
+                    var n = 0;
+                    var Q = Vector3.zero;
+                    var R = Vector3.zero;
+                    var V = vertex.Position;
+
+                    vertex.TraverseAdjacentEdges(edge =>
                     {
-                        var n = 0;
-                        var Q = Vector3.zero;
-                        var R = Vector3.zero;
-                        var V = vertex.Position;
+                        Q += edge.Face.GetCentroid();
+                        R += edge.GetCenter();
+                        n++;
+                    });
 
-                        vertex.TraverseAdjacentEdges(edge =>
-                        {
-                            Q += edge.Face.GetCentroid();
-                            R += edge.GetCenter();
-                            n++;
-                        });
+                    Q /= n;
+                    R /= n;
 
-                        Q /= n;
-                        R /= n;
-
-                        vertexPoints.Add((Q + 2f * R + (n - 3f) * V) / n);
-                    }
+                    vertexPoints.Add((Q + 2f * R + (n - 3f) * V) / n);
                 }
             }
         }
