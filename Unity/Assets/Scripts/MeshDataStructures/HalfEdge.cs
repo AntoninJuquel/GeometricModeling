@@ -251,7 +251,7 @@ namespace HalfEdge
                 Edges.Add(twin);
             }
 
-            GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
+            // GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
 
         public void SubdivideCatmullClark()
@@ -291,7 +291,7 @@ namespace HalfEdge
             }
 
 
-            GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
+            // GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
 
         public void CatmullClarkCreateNewPoints(out List<Vector3> facePoints, out List<Vector3> edgePoints, out List<Vector3> vertexPoints)

@@ -1,25 +1,52 @@
 using System.Linq;
-using HalfEdge;
-using UnityEditor;
+using Polygons;
 using UnityEngine;
+using Unity.Mathematics;
+using static Unity.Mathematics.math;
 
-public class MeshGeneratorQuads : MonoBehaviour
+public class MeshGeneratorQuads : Polygon
 {
     private delegate Vector3 ComputePosDelegate(float kX, float kZ);
+
+    private delegate float3 ComputePosDelegateSIMD(float3 k);
 
     private MeshFilter _mMf;
 
     [SerializeField] private AnimationCurve profile;
-
-    public HalfEdgeMesh halfEdgeMesh;
+    [SerializeField] private bool bothSides;
 
     private void Start()
     {
         _mMf = GetComponent<MeshFilter>();
-        _mMf.mesh = CreateGridXZ(1, 1);
-        halfEdgeMesh = new HalfEdgeMesh(_mMf.mesh);
-        GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
-        Debug.Log(ConvertToCsv("\t"));
+        /*Mesh = CreateGridXZSIMD(int3(40, 20, 1), (k) =>
+        {
+            if (bothSides) k = abs((k - .5f) * 2);
+            //return lerp(float3(-5f, 0, -5f), float3(5f, 0, 5f), k.xzy);
+            return lerp(float3(-5f, 1, -5f), float3(5f, 0, 5f), float3(
+                k.x,
+                .5f * (sin(k.x * 2 * PI * 4) * cos(k.y * 2 * PI * 3) + 1),
+                k.y));
+        });*/
+
+        var nCells = int3(3, 3, 1);
+        var nSegmentsPerCell = int3(100, 100, 1);
+        var kStep = float3(1) / (nCells * nSegmentsPerCell);
+
+        var cellSize = float3(1, .5f, 1);
+
+        Mesh = CreateGridXZSIMD(nCells * nSegmentsPerCell, (k) =>
+        {
+            var index = (int3)floor(k / kStep);
+            var localIndex = index % nSegmentsPerCell;
+            var indexCell = index / nSegmentsPerCell;
+            var relIndexCell = (float3)indexCell / nCells;
+
+            var cellOriginPos = lerp(-cellSize * nCells.xzy * .5f, cellSize * nCells.xzy * .5f, relIndexCell.xzy);
+
+            k = frac(k * nCells);
+
+            return cellOriginPos + cellSize * float3(k.x, smoothstep(.2f - .05f, .2f + .05f, k.x * k.y), k.y);
+        });
     }
 
     private Mesh CreateGridXZ(int nSegmentsX, int nSegmentsZ, ComputePosDelegate computePos = null)
@@ -36,12 +63,12 @@ public class MeshGeneratorQuads : MonoBehaviour
         var index = 0;
         for (var i = 0; i < nSegmentsZ + 1; i++)
         {
-            var kZ = (float) i / nSegmentsZ;
+            var kZ = (float)i / nSegmentsZ;
 
             for (var j = 0; j < nSegmentsX + 1; j++)
             {
-                var kX = (float) j / nSegmentsX;
-                vertices[index++] = computePos != null ? computePos(kX, kZ) : new Vector3(kX, 0, kZ);
+                var kX = (float)j / nSegmentsX;
+                vertices[index++] = computePos?.Invoke(kX, kZ) ?? new Vector3(kX, 0, kZ);
             }
         }
 
@@ -56,6 +83,51 @@ public class MeshGeneratorQuads : MonoBehaviour
                 quads[index++] = (i + 1) * (nSegmentsX + 1) + j + 1;
                 quads[index++] = i * (nSegmentsX + 1) + j + 1;
             }
+        }
+
+        mesh.vertices = vertices;
+        mesh.SetIndices(quads, MeshTopology.Quads, 0);
+
+        return mesh;
+    }
+
+    private Mesh CreateGridXZSIMD(int3 nSegments, ComputePosDelegateSIMD computePos = null)
+    {
+        var mesh = new Mesh
+        {
+            name = "normalizedGrid"
+        };
+
+        var vertices = new Vector3[(nSegments.x + 1) * (nSegments.y + 1)];
+        var quads = new int[nSegments.x * nSegments.y * 4];
+
+        //Vertices
+        var index = 0;
+        for (var i = 0; i < nSegments.y + 1; i++)
+        {
+            for (var j = 0; j < nSegments.x + 1; j++)
+            {
+                var k = float3(j, i, 0) / nSegments;
+                vertices[index++] = computePos?.Invoke(k) ?? k;
+            }
+        }
+
+        index = 0;
+        var offset = 0;
+        //Quads
+        for (var i = 0; i < nSegments.y; i++)
+        {
+            var nextOffset = offset + nSegments.x + 1;
+
+            for (var j = 0; j < nSegments.x; j++)
+            {
+                quads[index++] = offset + j;
+                quads[index++] = nextOffset + j;
+                quads[index++] = nextOffset + j + 1;
+                quads[index++] = offset + j + 1;
+            }
+
+            offset += nSegments.x + 1;
         }
 
         mesh.vertices = vertices;
@@ -82,54 +154,5 @@ public class MeshGeneratorQuads : MonoBehaviour
         }
 
         return $"Vertices{separator}{separator}{separator}Faces\nIndex{separator}Position{separator}{separator}Index{separator}Indices des vertices\n{string.Join("\n", strings)}";
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (!(_mMf && _mMf.mesh)) return;
-
-        var mesh = _mMf.mesh;
-        var vertices = mesh.vertices;
-        var quads = mesh.GetIndices(0);
-
-        var style = new GUIStyle
-        {
-            fontSize = 15,
-            normal =
-            {
-                textColor = Color.red
-            }
-        };
-
-        for (var i = 0; i < vertices.Length; i++)
-        {
-            var worldPos = transform.TransformPoint(vertices[i]);
-            Handles.Label(worldPos, i.ToString(), style);
-        }
-
-        Gizmos.color = Color.black;
-        style.normal.textColor = Color.blue;
-
-        for (var i = 0; i < quads.Length / 4; i++)
-        {
-            var index1 = quads[4 * i];
-            var index2 = quads[4 * i + 1];
-            var index3 = quads[4 * i + 2];
-            var index4 = quads[4 * i + 3];
-
-            var pt1 = transform.TransformPoint(vertices[index1]);
-            var pt2 = transform.TransformPoint(vertices[index2]);
-            var pt3 = transform.TransformPoint(vertices[index3]);
-            var pt4 = transform.TransformPoint(vertices[index4]);
-
-            Gizmos.DrawLine(pt1, pt2);
-            Gizmos.DrawLine(pt2, pt3);
-            Gizmos.DrawLine(pt3, pt4);
-            Gizmos.DrawLine(pt4, pt1);
-
-            var str = $"{i} ({index1},{index2},{index3},{index4})";
-
-            Handles.Label((pt1 + pt2 + pt3 + pt4) / 4.0f, str, style);
-        }
     }
 }
