@@ -5,6 +5,8 @@ using UnityEngine;
 
 namespace WingedEdge
 {
+    public delegate void EdgeDelegate(WingedEdge edge);
+
     public class Vertex
     {
         public int index;
@@ -32,6 +34,44 @@ namespace WingedEdge
     {
         public int index;
         public WingedEdge edge;
+
+        public void TraverseEdgesCCW(EdgeDelegate edgeDelegate)
+        {
+            var start = edge;
+            var currentEdge = start;
+            do
+            {
+                edgeDelegate(currentEdge);
+                if (currentEdge.rightFace == this)
+                {
+                    currentEdge = currentEdge.endCCWEdge;
+                }
+                else
+                {
+                    currentEdge = currentEdge.startCCWEdge;
+                }
+            } while (currentEdge != start);
+        }
+
+        public Vector3 GetCentroid()
+        {
+            var sum = Vector3.zero;
+            var iteration = 0;
+            TraverseEdgesCCW(currentEdge =>
+            {
+                if (currentEdge.rightFace == this)
+                {
+                    sum += currentEdge.startVertex.position;
+                }
+                else
+                {
+                    sum += currentEdge.endVertex.position;
+                }
+
+                iteration++;
+            });
+            return sum / iteration;
+        }
     }
 
     public class WingedEdgeMesh
@@ -201,7 +241,29 @@ namespace WingedEdge
                     edge3.endCCWEdge = edge0;
                 }
 
+                face.edge = edge0;
                 faces.Add(face);
+            }
+
+            foreach (var edge in edges)
+            {
+                if (edge.endCWEdge == null)
+                {
+                    var currentEdge = edge.endCCWEdge;
+
+                    while (currentEdge.startVertex != edge.endVertex)
+                    {
+                        currentEdge = currentEdge.endCCWEdge;
+                    }
+
+                    while (currentEdge.startCCWEdge != null)
+                    {
+                        currentEdge = currentEdge.startCCWEdge;
+                    }
+
+                    edge.endCWEdge = currentEdge;
+                    currentEdge.startCCWEdge = edge;
+                }
             }
         }
 
@@ -274,27 +336,45 @@ namespace WingedEdge
                 if (edge.startCWEdge != null)
                 {
                     var scwcenter = transform.TransformPoint((edge.startCWEdge.startVertex.position + edge.startCWEdge.endVertex.position) / 2f);
+                    Gizmos.color = Color.red;
                     DrawArrow.ForGizmo(startPos, (scwcenter - startPos).normalized);
                 }
 
                 if (edge.startCCWEdge != null)
                 {
                     var sccwcenter = (edge.startCCWEdge.startVertex.position + edge.startCCWEdge.endVertex.position) / 2f;
+                    Gizmos.color = Color.blue;
                     DrawArrow.ForGizmo(startPos, (sccwcenter - startPos).normalized);
                 }
 
                 if (edge.endCWEdge != null)
                 {
                     var ecwcenter = (edge.endCWEdge.startVertex.position + edge.endCWEdge.endVertex.position) / 2f;
+                    Gizmos.color = Color.red;
                     DrawArrow.ForGizmo(endPos, (ecwcenter - endPos).normalized);
                 }
 
                 if (edge.endCCWEdge != null)
                 {
                     var eccwcenter = transform.TransformPoint((edge.endCCWEdge.startVertex.position + edge.endCCWEdge.endVertex.position) / 2f);
+                    Gizmos.color = Color.blue;
                     DrawArrow.ForGizmo(endPos, (eccwcenter - endPos).normalized);
                 }
+
+                if (edge.leftFace != null)
+                {
+                    Gizmos.color = Color.red;
+                    DrawArrow.ForGizmo(center, (edge.leftFace.GetCentroid() - center).normalized);
+                }
+
+                if (edge.rightFace != null)
+                {
+                    Gizmos.color = Color.blue;
+                    DrawArrow.ForGizmo(center, (edge.rightFace.GetCentroid() - center).normalized);
+                }
             }
+
+            Gizmos.color = Color.white;
         }
 
         private void DrawVertices(Transform transform)
