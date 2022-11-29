@@ -284,7 +284,7 @@ namespace WingedEdge
             return faceVertexMesh;
         }
 
-        private string ConvertToCsv(string separator)
+        public string ConvertToCsv(string separator)
         {
             var strings = vertices.Select((vertex, i) => $"{i}{separator}{vertex.Position.x:N03} {vertex.Position.y:N03} {vertex.Position.z:N03}{separator}{vertex.Edge.Index}{separator}{separator}").ToList();
 

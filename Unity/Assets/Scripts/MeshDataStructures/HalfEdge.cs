@@ -267,7 +267,7 @@ namespace HalfEdge
             return faceVertexMesh;
         }
 
-        private string ConvertToCsv(string separator)
+        public string ConvertToCsv(string separator)
         {
             var strings = Vertices.Select((vertex, i) => $"{i}{separator}{vertex.Position.x:N03} {vertex.Position.y:N03} {vertex.Position.z:N03}{separator}{vertex.OutgoingEdge.Index}{separator}{separator}").ToList();
 
