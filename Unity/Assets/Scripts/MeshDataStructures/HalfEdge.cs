@@ -84,25 +84,14 @@ namespace HalfEdge
             Edge = edge;
         }
 
-        public void TraverseEdgesCW(EdgeDelegate edgeDelegate)
+        public void TraverseEdges(EdgeDelegate edgeDelegate, bool clockwise = true)
         {
             var start = Edge;
             var currentEdge = start;
             do
             {
                 edgeDelegate(currentEdge);
-                currentEdge = currentEdge.NextEdge;
-            } while (currentEdge != start);
-        }
-
-        public void TraverseEdgesCWW(EdgeDelegate edgeDelegate)
-        {
-            var start = Edge;
-            var currentEdge = start;
-            do
-            {
-                edgeDelegate(currentEdge);
-                currentEdge = currentEdge.PrevEdge;
+                currentEdge = clockwise ? currentEdge.NextEdge : currentEdge.PrevEdge;
             } while (currentEdge != start);
         }
 
@@ -110,7 +99,7 @@ namespace HalfEdge
         {
             var sum = Vector3.zero;
             var iteration = 0;
-            TraverseEdgesCW(currentEdge =>
+            TraverseEdges(currentEdge =>
             {
                 sum += currentEdge.SourceVertex.Position;
                 iteration++;
@@ -130,6 +119,8 @@ namespace HalfEdge
             var res = Vertices.Aggregate(Vector3.zero, (current, vertex) => current + vertex.Position);
             return res / Vertices.Count;
         }
+
+        #region Base Methods
 
         public HalfEdgeMesh(Mesh mesh)
         {
@@ -250,9 +241,63 @@ namespace HalfEdge
 
                 Edges.Add(twin);
             }
-
-            // GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
+
+        public Mesh ConvertToFaceVertexMesh()
+        {
+            Mesh faceVertexMesh = new Mesh();
+
+            var meshVertices = new Vector3[Vertices.Count];
+            var meshQuads = new List<int>();
+
+            var index = 0;
+            foreach (var vertex in Vertices)
+            {
+                meshVertices[index++] = vertex.Position;
+            }
+
+            foreach (var face in Faces)
+            {
+                face.TraverseEdges(currentEdge => meshQuads.Add(currentEdge.SourceVertex.Index));
+            }
+
+            faceVertexMesh.vertices = meshVertices;
+            faceVertexMesh.SetIndices(meshQuads, MeshTopology.Quads, 0);
+
+            return faceVertexMesh;
+        }
+
+        private string ConvertToCsv(string separator)
+        {
+            var strings = Vertices.Select((vertex, i) => $"{i}{separator}{vertex.Position.x:N03} {vertex.Position.y:N03} {vertex.Position.z:N03}{separator}{vertex.OutgoingEdge.Index}{separator}{separator}").ToList();
+
+            for (var i = Vertices.Count; i < Edges.Count; i++)
+                strings.Add(string.Format("{0}{0}{0}{0}", separator));
+
+            for (var i = 0; i < Edges.Count; i++)
+            {
+                var faceIndex = Edges[i].Face != null ? Edges[i].Face.Index.ToString() : "∅";
+                var vertexIndex = Edges[i].SourceVertex != null ? Edges[i].SourceVertex.Index.ToString() : "∅";
+                var prevIndex = Edges[i].PrevEdge != null ? Edges[i].PrevEdge.Index.ToString() : "∅";
+                var nextIndex = Edges[i].NextEdge != null ? Edges[i].NextEdge.Index.ToString() : "∅";
+                var twinIndex = Edges[i].TwinEdge != null ? Edges[i].TwinEdge.Index.ToString() : "∅";
+                strings[i] += $"{i}{separator}{vertexIndex}{separator}{faceIndex}{separator}{prevIndex}{separator}{nextIndex}{separator}{twinIndex}{separator}{separator}";
+            }
+
+            for (var i = Mathf.Max(Vertices.Count, Edges.Count); i < Faces.Count; i++)
+                strings.Add(string.Format("{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}", separator));
+
+            for (var i = 0; i < Faces.Count; i++)
+            {
+                strings[i] += $"{i}{separator}{Faces[i].Edge.Index}";
+            }
+
+            return $"Vertices{separator}{separator}{separator}{separator}Half-Edges{separator}{separator}{separator}{separator}{separator}{separator}{separator}Faces\nIndex{separator}Position{separator}Outgoing-edge-index{separator}{separator}Index{separator}Vertex-index{separator}Face-index{separator}Prev-Edge{separator}Next-Edge{separator}Twin-Edge{separator}{separator}Index{separator}Edge-index\n{string.Join("\n", strings)}";
+        }
+
+        #endregion
+
+        #region Catmull Clark Methods
 
         public void SubdivideCatmullClark()
         {
@@ -289,9 +334,6 @@ namespace HalfEdge
             {
                 edge.NextEdge.PrevEdge = edge;
             }
-
-
-            // GUIUtility.systemCopyBuffer = ConvertToCsv("\t");
         }
 
         public void CatmullClarkCreateNewPoints(out List<Vector3> facePoints, out List<Vector3> edgePoints, out List<Vector3> vertexPoints)
@@ -325,11 +367,9 @@ namespace HalfEdge
 
                     vertex.TraverseAdjacentEdges(edge =>
                     {
-                        if (edge.InBorder)
-                        {
-                            sum += edge.GetCenter();
-                            nb++;
-                        }
+                        if (!edge.InBorder) return;
+                        sum += edge.GetCenter();
+                        nb++;
                     });
 
                     vertexPoints.Add(sum / nb);
@@ -337,21 +377,21 @@ namespace HalfEdge
                 else
                 {
                     var n = 0;
-                    var Q = Vector3.zero;
-                    var R = Vector3.zero;
-                    var V = vertex.Position;
+                    var q = Vector3.zero;
+                    var r = Vector3.zero;
+                    var v = vertex.Position;
 
                     vertex.TraverseAdjacentEdges(edge =>
                     {
-                        Q += edge.Face.GetCentroid();
-                        R += edge.GetCenter();
+                        q += edge.Face.GetCentroid();
+                        r += edge.GetCenter();
                         n++;
                     });
 
-                    Q /= n;
-                    R /= n;
+                    q /= n;
+                    r /= n;
 
-                    vertexPoints.Add((Q + 2f * R + (n - 3f) * V) / n);
+                    vertexPoints.Add((q + 2f * r + (n - 3f) * v) / n);
                 }
             }
         }
@@ -447,57 +487,9 @@ namespace HalfEdge
             } while (currentEdge != start);
         }
 
-        public Mesh ConvertToFaceVertexMesh()
-        {
-            Mesh faceVertexMesh = new Mesh();
+        #endregion
 
-            var meshVertices = new Vector3[Vertices.Count];
-            var meshQuads = new List<int>();
-
-            var index = 0;
-            foreach (var vertex in Vertices)
-            {
-                meshVertices[index++] = vertex.Position;
-            }
-
-            foreach (var face in Faces)
-            {
-                face.TraverseEdgesCW(currentEdge => meshQuads.Add(currentEdge.SourceVertex.Index));
-            }
-
-            faceVertexMesh.vertices = meshVertices;
-            faceVertexMesh.SetIndices(meshQuads, MeshTopology.Quads, 0);
-
-            return faceVertexMesh;
-        }
-
-        private string ConvertToCsv(string separator)
-        {
-            var strings = Vertices.Select((vertex, i) => $"{i}{separator}{vertex.Position.x:N03} {vertex.Position.y:N03} {vertex.Position.z:N03}{separator}{vertex.OutgoingEdge.Index}{separator}{separator}").ToList();
-
-            for (var i = Vertices.Count; i < Edges.Count; i++)
-                strings.Add(string.Format("{0}{0}{0}{0}", separator));
-
-            for (var i = 0; i < Edges.Count; i++)
-            {
-                var faceIndex = Edges[i].Face != null ? Edges[i].Face.Index.ToString() : "∅";
-                var vertexIndex = Edges[i].SourceVertex != null ? Edges[i].SourceVertex.Index.ToString() : "∅";
-                var prevIndex = Edges[i].PrevEdge != null ? Edges[i].PrevEdge.Index.ToString() : "∅";
-                var nextIndex = Edges[i].NextEdge != null ? Edges[i].NextEdge.Index.ToString() : "∅";
-                var twinIndex = Edges[i].TwinEdge != null ? Edges[i].TwinEdge.Index.ToString() : "∅";
-                strings[i] += $"{i}{separator}{vertexIndex}{separator}{faceIndex}{separator}{prevIndex}{separator}{nextIndex}{separator}{twinIndex}{separator}{separator}";
-            }
-
-            for (var i = Mathf.Max(Vertices.Count, Edges.Count); i < Faces.Count; i++)
-                strings.Add(string.Format("{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}", separator));
-
-            for (var i = 0; i < Faces.Count; i++)
-            {
-                strings[i] += $"{i}{separator}{Faces[i].Edge.Index}";
-            }
-
-            return $"Vertices{separator}{separator}{separator}{separator}Half-Edges{separator}{separator}{separator}{separator}{separator}{separator}{separator}Faces\nIndex{separator}Position{separator}Outgoing-edge-index{separator}{separator}Index{separator}Vertex-index{separator}Face-index{separator}Prev-Edge{separator}Next-Edge{separator}Twin-Edge{separator}{separator}Index{separator}Edge-index\n{string.Join("\n", strings)}";
-        }
+        #region Gizmos Methods
 
         private void DrawVertices(bool drawHandles, Transform transform)
         {
@@ -563,7 +555,7 @@ namespace HalfEdge
             foreach (var face in Faces)
             {
                 Gizmos.color = Color.green;
-                face.TraverseEdgesCW(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.SourceVertex.Position), transform.TransformPoint(currentEdge.NextEdge.SourceVertex.Position)));
+                face.TraverseEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.SourceVertex.Position), transform.TransformPoint(currentEdge.NextEdge.SourceVertex.Position)));
                 if (drawHandles)
                     Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.Index}", style);
             }
@@ -583,5 +575,7 @@ namespace HalfEdge
                 Gizmos.DrawWireSphere(transform.TransformPoint(GetCentroid()), .5f);
             }
         }
+
+        #endregion
     }
 }

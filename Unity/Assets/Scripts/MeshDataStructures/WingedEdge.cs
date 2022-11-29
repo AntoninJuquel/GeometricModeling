@@ -9,46 +9,46 @@ namespace WingedEdge
 
     public class Vertex
     {
-        public int index;
-        public Vector3 position;
-        public WingedEdge edge;
+        public int Index;
+        public Vector3 Position;
+        public WingedEdge Edge;
     }
 
     public class WingedEdge
     {
-        public int index;
+        public int Index;
 
-        public Vertex startVertex;
-        public WingedEdge startCWEdge;
-        public WingedEdge startCCWEdge;
+        public Vertex StartVertex;
+        public WingedEdge StartCwEdge;
+        public WingedEdge StartCcwEdge;
 
-        public Vertex endVertex;
-        public WingedEdge endCWEdge;
-        public WingedEdge endCCWEdge;
+        public Vertex EndVertex;
+        public WingedEdge EndCwEdge;
+        public WingedEdge EndCcwEdge;
 
-        public Face rightFace;
-        public Face leftFace;
+        public Face RightFace;
+        public Face LeftFace;
     }
 
     public class Face
     {
-        public int index;
-        public WingedEdge edge;
+        public int Index;
+        public WingedEdge Edge;
 
         public void TraverseEdges(EdgeDelegate edgeDelegate, bool clockwise = true)
         {
-            var start = edge;
+            var start = Edge;
             var currentEdge = start;
             do
             {
                 edgeDelegate(currentEdge);
-                if (currentEdge.rightFace == this)
+                if (currentEdge.RightFace == this)
                 {
-                    currentEdge = clockwise ? currentEdge.startCWEdge : currentEdge.endCCWEdge;
+                    currentEdge = clockwise ? currentEdge.StartCwEdge : currentEdge.EndCcwEdge;
                 }
                 else
                 {
-                    currentEdge = clockwise ? currentEdge.endCWEdge : currentEdge.startCCWEdge;
+                    currentEdge = clockwise ? currentEdge.EndCwEdge : currentEdge.StartCcwEdge;
                 }
             } while (currentEdge != start);
         }
@@ -59,13 +59,13 @@ namespace WingedEdge
             var iteration = 0;
             TraverseEdges(currentEdge =>
             {
-                if (currentEdge.rightFace == this)
+                if (currentEdge.RightFace == this)
                 {
-                    sum += currentEdge.startVertex.position;
+                    sum += currentEdge.StartVertex.Position;
                 }
                 else
                 {
-                    sum += currentEdge.endVertex.position;
+                    sum += currentEdge.EndVertex.Position;
                 }
 
                 iteration++;
@@ -82,9 +82,11 @@ namespace WingedEdge
 
         public Vector3 GetCentroid()
         {
-            var res = vertices.Aggregate(Vector3.zero, (current, vertex) => current + vertex.position);
+            var res = vertices.Aggregate(Vector3.zero, (current, vertex) => current + vertex.Position);
             return res / vertices.Count;
         }
+
+        #region Base Methods
 
         public WingedEdgeMesh(Mesh mesh)
         {
@@ -96,8 +98,8 @@ namespace WingedEdge
             {
                 vertices.Add(new Vertex()
                 {
-                    index = i,
-                    position = meshVertices[i]
+                    Index = i,
+                    Position = meshVertices[i]
                 });
             }
 
@@ -123,7 +125,7 @@ namespace WingedEdge
 
                 var face = new Face()
                 {
-                    index = i / 4,
+                    Index = i / 4,
                 };
 
                 WingedEdge edge0;
@@ -134,16 +136,16 @@ namespace WingedEdge
                 if (edgesDictionary.TryGetValue(i0I1, out var e0))
                 {
                     edge0 = e0;
-                    edge0.leftFace = face;
+                    edge0.LeftFace = face;
                 }
                 else
                 {
                     edge0 = new WingedEdge()
                     {
-                        index = edges.Count,
-                        startVertex = vert0,
-                        endVertex = vert1,
-                        rightFace = face
+                        Index = edges.Count,
+                        StartVertex = vert0,
+                        EndVertex = vert1,
+                        RightFace = face
                     };
                     edgesDictionary.Add(i0I1, edge0);
                     edges.Add(edge0);
@@ -152,16 +154,16 @@ namespace WingedEdge
                 if (edgesDictionary.TryGetValue(i1I2, out var e1))
                 {
                     edge1 = e1;
-                    edge1.leftFace = face;
+                    edge1.LeftFace = face;
                 }
                 else
                 {
                     edge1 = new WingedEdge()
                     {
-                        index = edges.Count,
-                        startVertex = vert1,
-                        endVertex = vert2,
-                        rightFace = face
+                        Index = edges.Count,
+                        StartVertex = vert1,
+                        EndVertex = vert2,
+                        RightFace = face
                     };
                     edgesDictionary.Add(i1I2, edge1);
                     edges.Add(edge1);
@@ -170,16 +172,16 @@ namespace WingedEdge
                 if (edgesDictionary.TryGetValue(i2I3, out var e2))
                 {
                     edge2 = e2;
-                    edge2.leftFace = face;
+                    edge2.LeftFace = face;
                 }
                 else
                 {
                     edge2 = new WingedEdge()
                     {
-                        index = edges.Count,
-                        startVertex = vert2,
-                        endVertex = vert3,
-                        rightFace = face
+                        Index = edges.Count,
+                        StartVertex = vert2,
+                        EndVertex = vert3,
+                        RightFace = face
                     };
                     edgesDictionary.Add(i2I3, edge2);
                     edges.Add(edge2);
@@ -188,16 +190,16 @@ namespace WingedEdge
                 if (edgesDictionary.TryGetValue(i3I0, out var e3))
                 {
                     edge3 = e3;
-                    edge3.leftFace = face;
+                    edge3.LeftFace = face;
                 }
                 else
                 {
                     edge3 = new WingedEdge
                     {
-                        index = edges.Count,
-                        startVertex = vert3,
-                        endVertex = vert0,
-                        rightFace = face
+                        Index = edges.Count,
+                        StartVertex = vert3,
+                        EndVertex = vert0,
+                        RightFace = face
                     };
                     edgesDictionary.Add(i3I0, edge3);
                     edges.Add(edge3);
@@ -205,70 +207,72 @@ namespace WingedEdge
 
                 if (e0 != null)
                 {
-                    edge0.endCWEdge = edge3;
-                    edge0.startCCWEdge = edge1;
+                    edge0.EndCwEdge = edge3;
+                    edge0.StartCcwEdge = edge1;
                 }
                 else
                 {
-                    edge0.startCWEdge = edge3;
-                    edge0.endCCWEdge = edge1;
+                    edge0.StartCwEdge = edge3;
+                    edge0.EndCcwEdge = edge1;
                 }
 
                 if (e1 != null)
                 {
-                    edge1.endCWEdge = edge0;
-                    edge1.startCCWEdge = edge2;
+                    edge1.EndCwEdge = edge0;
+                    edge1.StartCcwEdge = edge2;
                 }
                 else
                 {
-                    edge1.startCWEdge = edge0;
-                    edge1.endCCWEdge = edge2;
+                    edge1.StartCwEdge = edge0;
+                    edge1.EndCcwEdge = edge2;
                 }
 
                 if (e2 != null)
                 {
-                    edge2.endCWEdge = edge1;
-                    edge2.startCCWEdge = edge3;
+                    edge2.EndCwEdge = edge1;
+                    edge2.StartCcwEdge = edge3;
                 }
                 else
                 {
-                    edge2.startCWEdge = edge1;
-                    edge2.endCCWEdge = edge3;
+                    edge2.StartCwEdge = edge1;
+                    edge2.EndCcwEdge = edge3;
                 }
 
                 if (e3 != null)
                 {
-                    edge3.endCWEdge = edge2;
-                    edge3.startCCWEdge = edge0;
+                    edge3.EndCwEdge = edge2;
+                    edge3.StartCcwEdge = edge0;
                 }
                 else
                 {
-                    edge3.startCWEdge = edge2;
-                    edge3.endCCWEdge = edge0;
+                    edge3.StartCwEdge = edge2;
+                    edge3.EndCcwEdge = edge0;
                 }
 
-                face.edge = edge0;
+                face.Edge = edge0;
                 faces.Add(face);
             }
 
             foreach (var edge in edges)
             {
-                if (edge.endCWEdge == null)
+                edge.StartVertex.Edge ??= edge;
+
+                if (edge.EndCwEdge == null)
                 {
-                    var currentEdge = edge.endCCWEdge;
+                    var currentEdge = edge.EndCcwEdge;
 
-                    while (currentEdge.startVertex != edge.endVertex)
+                    while (currentEdge.StartVertex != edge.EndVertex)
                     {
-                        currentEdge = currentEdge.endCCWEdge;
+                        currentEdge = currentEdge.EndCcwEdge;
                     }
 
-                    while (currentEdge.startCCWEdge != null)
+                    while (currentEdge.StartCcwEdge != null)
                     {
-                        currentEdge = currentEdge.startCCWEdge;
+                        currentEdge = currentEdge.StartCcwEdge;
                     }
 
-                    edge.endCWEdge = currentEdge;
-                    currentEdge.startCCWEdge = edge;
+                    edge.EndCwEdge = currentEdge;
+                    currentEdge.StartCcwEdge = edge;
                 }
             }
         }
@@ -280,27 +284,40 @@ namespace WingedEdge
             return faceVertexMesh;
         }
 
-        public string ConvertToCSVFormat(string separator = "\t")
+        private string ConvertToCsv(string separator)
         {
-            string str = "";
-            //magic happens
-            return str;
+            var strings = vertices.Select((vertex, i) => $"{i}{separator}{vertex.Position.x:N03} {vertex.Position.y:N03} {vertex.Position.z:N03}{separator}{vertex.Edge.Index}{separator}{separator}").ToList();
+
+            for (var i = vertices.Count; i < edges.Count; i++)
+                strings.Add(string.Format("{0}{0}{0}{0}", separator));
+
+            for (var i = 0; i < edges.Count; i++)
+            {
+                var startVertexIndex = edges[i].StartVertex.Index;
+                var endVertexIndex = edges[i].EndVertex.Index;
+                var startCwEdgeIndex = edges[i].StartCwEdge.Index;
+                var startCcwEdgeIndex = edges[i].StartCcwEdge.Index;
+                var endCwEdgeIndex = edges[i].EndCwEdge.Index;
+                var endCcwEdgeIndex = edges[i].EndCcwEdge.Index;
+                var rightFaceIndex = edges[i].RightFace != null ? edges[i].RightFace.Index.ToString() : "∅";
+                var leftFaceIndex = edges[i].LeftFace != null ? edges[i].LeftFace.Index.ToString() : "∅";
+                strings[i] += $"{i}{separator}{startVertexIndex}{separator}{endVertexIndex}{separator}{startCwEdgeIndex}{separator}{startCcwEdgeIndex}{separator}{endCwEdgeIndex}{separator}{endCcwEdgeIndex}{separator}{rightFaceIndex}{separator}{leftFaceIndex}{separator}{separator}";
+            }
+
+            for (var i = Mathf.Max(vertices.Count, edges.Count); i < faces.Count; i++)
+                strings.Add(string.Format("{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}{0}", separator));
+
+            for (var i = 0; i < faces.Count; i++)
+            {
+                strings[i] += $"{i}{separator}{faces[i].Edge.Index}";
+            }
+
+            return $"Vertices{separator}{separator}{separator}{separator}Winged-Edges{separator}{separator}{separator}{separator}{separator}{separator}{separator}{separator}{separator}{separator}Faces\nIndex{separator}Position{separator}Edge-index{separator}{separator}Index{separator}Start-Vertex-Index{separator}End-Vertex-Index{separator}Start-CW-Edge{separator}Start-CCW-Edge{separator}End-CW-Edge{separator}End-CCW-Edge{separator}Right-Face-Index{separator}Left-Face-Index{separator}{separator}Index{separator}Edge-index\n{string.Join("\n", strings)}";
         }
 
-        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, bool drawHandles, Transform transform)
-        {
-            if (drawVertices)
-                DrawVertices(drawHandles, transform);
-            if (drawEdges)
-                DrawEdges(drawHandles, transform);
-            if (drawFaces)
-                DrawFaces(drawHandles, transform);
-            if (drawCentroid)
-            {
-                Gizmos.color = Color.magenta;
-                Gizmos.DrawWireSphere(transform.TransformPoint(GetCentroid()), .5f);
-            }
-        }
+        #endregion
+
+        #region Gizmos Methods
 
         private void DrawFaces(bool drawHandles, Transform transform)
         {
@@ -317,9 +334,9 @@ namespace WingedEdge
 
             foreach (var face in faces)
             {
-                face.TraverseEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.startVertex.position), transform.TransformPoint(currentEdge.endVertex.position)));
+                face.TraverseEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.StartVertex.Position), transform.TransformPoint(currentEdge.EndVertex.Position)));
                 if (drawHandles)
-                    Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.index}", style);
+                    Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.Index}", style);
             }
         }
 
@@ -338,15 +355,15 @@ namespace WingedEdge
 
             foreach (var edge in edges)
             {
-                var p0 = transform.TransformPoint(edge.startVertex.position);
-                var p1 = transform.TransformPoint(edge.endVertex.position);
+                var p0 = transform.TransformPoint(edge.StartVertex.Position);
+                var p1 = transform.TransformPoint(edge.EndVertex.Position);
                 var start = Vector3.Lerp(p0, p1, .1f);
                 var end = Vector3.Lerp(p0, p1, .9f);
                 var center = (p0 + p1) / 2f;
 
                 DrawArrow.ForGizmo(start, end - start, .1f);
                 if (drawHandles)
-                    Handles.Label(center, $"Edge {edge.index}", style);
+                    Handles.Label(center, $"Edge {edge.Index}", style);
             }
         }
 
@@ -365,11 +382,28 @@ namespace WingedEdge
 
             foreach (var vertex in vertices)
             {
-                var position = transform.TransformPoint(vertex.position);
+                var position = transform.TransformPoint(vertex.Position);
                 Gizmos.DrawSphere(position, .1f);
                 if (drawHandles)
-                    Handles.Label(position, $"Vertex {vertex.index}", style);
+                    Handles.Label(position, $"Vertex {vertex.Index}", style);
             }
         }
+
+        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, bool drawHandles, Transform transform)
+        {
+            if (drawVertices)
+                DrawVertices(drawHandles, transform);
+            if (drawEdges)
+                DrawEdges(drawHandles, transform);
+            if (drawFaces)
+                DrawFaces(drawHandles, transform);
+            if (drawCentroid)
+            {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawWireSphere(transform.TransformPoint(GetCentroid()), .5f);
+            }
+        }
+
+        #endregion
     }
 }
