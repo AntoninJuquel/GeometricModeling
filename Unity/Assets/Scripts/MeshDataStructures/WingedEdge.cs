@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -35,7 +35,7 @@ namespace WingedEdge
         public int index;
         public WingedEdge edge;
 
-        public void TraverseEdgesCCW(EdgeDelegate edgeDelegate)
+        public void TraverseEdges(EdgeDelegate edgeDelegate, bool clockwise = true)
         {
             var start = edge;
             var currentEdge = start;
@@ -44,11 +44,11 @@ namespace WingedEdge
                 edgeDelegate(currentEdge);
                 if (currentEdge.rightFace == this)
                 {
-                    currentEdge = currentEdge.endCCWEdge;
+                    currentEdge = clockwise ? currentEdge.startCWEdge : currentEdge.endCCWEdge;
                 }
                 else
                 {
-                    currentEdge = currentEdge.startCCWEdge;
+                    currentEdge = clockwise ? currentEdge.endCWEdge : currentEdge.startCCWEdge;
                 }
             } while (currentEdge != start);
         }
@@ -57,7 +57,7 @@ namespace WingedEdge
         {
             var sum = Vector3.zero;
             var iteration = 0;
-            TraverseEdgesCCW(currentEdge =>
+            TraverseEdges(currentEdge =>
             {
                 if (currentEdge.rightFace == this)
                 {
@@ -79,6 +79,12 @@ namespace WingedEdge
         public List<Vertex> vertices = new();
         public List<WingedEdge> edges = new();
         public List<Face> faces = new();
+
+        public Vector3 GetCentroid()
+        {
+            var res = vertices.Aggregate(Vector3.zero, (current, vertex) => current + vertex.position);
+            return res / vertices.Count;
+        }
 
         public WingedEdgeMesh(Mesh mesh)
         {
@@ -281,116 +287,88 @@ namespace WingedEdge
             return str;
         }
 
-        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, Transform transform)
+        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, bool drawHandles, Transform transform)
         {
             if (drawVertices)
-                DrawVertices(transform);
+                DrawVertices(drawHandles, transform);
             if (drawEdges)
-                DrawEdges(transform);
+                DrawEdges(drawHandles, transform);
             if (drawFaces)
-                DrawFaces(transform);
-        }
-
-        private void DrawFaces(Transform transform)
-        {
-            foreach (var face in faces)
+                DrawFaces(drawHandles, transform);
+            if (drawCentroid)
             {
-                // var pos0 = transform.TransformPoint(face.edge.startVertex.position);
-                // var pos1 = transform.TransformPoint(face.edge.endVertex.position);
-                // var pos2 = transform.TransformPoint(face.edge.startCWEdge.endVertex.position);
-                // var pos3 = transform.TransformPoint(face.edge.nextEdge.nextEdge.nextEdge.sourceVertex.position);
-
-                //
-                // Gizmos.DrawLine(pos0, pos1);
-                // Gizmos.DrawLine(pos1, pos2);
-                // Gizmos.DrawLine(pos2, pos3);
-                // Gizmos.DrawLine(pos3, pos0);
-                //
-                // Gizmos.DrawLine(pos0, pos2);
-                // Gizmos.DrawLine(pos1, pos3);
-                //
-                // var position = face.edge.sourceVertex.position;
-                // var direction = (face.edge.nextEdge.sourceVertex.position - position).normalized;
-                // DrawArrow.ForGizmo(position, direction);
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawWireSphere(transform.TransformPoint(GetCentroid()), .5f);
             }
         }
 
-        private void DrawEdges(Transform transform)
+        private void DrawFaces(bool drawHandles, Transform transform)
         {
+            Gizmos.color = Color.green;
+
             var style = new GUIStyle
             {
                 fontSize = 15,
                 normal =
                 {
-                    textColor = Color.red
+                    textColor = Gizmos.color
+                }
+            };
+
+            foreach (var face in faces)
+            {
+                face.TraverseEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.startVertex.position), transform.TransformPoint(currentEdge.endVertex.position)));
+                if (drawHandles)
+                    Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.index}", style);
+            }
+        }
+
+        private void DrawEdges(bool drawHandles, Transform transform)
+        {
+            Gizmos.color = Color.blue;
+
+            var style = new GUIStyle
+            {
+                fontSize = 15,
+                normal =
+                {
+                    textColor = Gizmos.color
                 }
             };
 
             foreach (var edge in edges)
             {
-                var center = transform.TransformPoint((edge.startVertex.position + edge.endVertex.position) / 2f);
-                var startPos = transform.TransformPoint(Vector3.Lerp(edge.startVertex.position, edge.endVertex.position, .1f));
-                var endPos = transform.TransformPoint(Vector3.Lerp(edge.startVertex.position, edge.endVertex.position, .9f));
-                Handles.Label(center, $"e{edge.index}", style);
+                var p0 = transform.TransformPoint(edge.startVertex.position);
+                var p1 = transform.TransformPoint(edge.endVertex.position);
+                var start = Vector3.Lerp(p0, p1, .1f);
+                var end = Vector3.Lerp(p0, p1, .9f);
+                var center = (p0 + p1) / 2f;
 
-                if (edge.startCWEdge != null)
-                {
-                    var scwcenter = transform.TransformPoint((edge.startCWEdge.startVertex.position + edge.startCWEdge.endVertex.position) / 2f);
-                    Gizmos.color = Color.red;
-                    DrawArrow.ForGizmo(startPos, (scwcenter - startPos).normalized);
-                }
-
-                if (edge.startCCWEdge != null)
-                {
-                    var sccwcenter = (edge.startCCWEdge.startVertex.position + edge.startCCWEdge.endVertex.position) / 2f;
-                    Gizmos.color = Color.blue;
-                    DrawArrow.ForGizmo(startPos, (sccwcenter - startPos).normalized);
-                }
-
-                if (edge.endCWEdge != null)
-                {
-                    var ecwcenter = (edge.endCWEdge.startVertex.position + edge.endCWEdge.endVertex.position) / 2f;
-                    Gizmos.color = Color.red;
-                    DrawArrow.ForGizmo(endPos, (ecwcenter - endPos).normalized);
-                }
-
-                if (edge.endCCWEdge != null)
-                {
-                    var eccwcenter = transform.TransformPoint((edge.endCCWEdge.startVertex.position + edge.endCCWEdge.endVertex.position) / 2f);
-                    Gizmos.color = Color.blue;
-                    DrawArrow.ForGizmo(endPos, (eccwcenter - endPos).normalized);
-                }
-
-                if (edge.leftFace != null)
-                {
-                    Gizmos.color = Color.red;
-                    DrawArrow.ForGizmo(center, (edge.leftFace.GetCentroid() - center).normalized);
-                }
-
-                if (edge.rightFace != null)
-                {
-                    Gizmos.color = Color.blue;
-                    DrawArrow.ForGizmo(center, (edge.rightFace.GetCentroid() - center).normalized);
-                }
+                DrawArrow.ForGizmo(start, end - start, .1f);
+                if (drawHandles)
+                    Handles.Label(center, $"Edge {edge.index}", style);
             }
-
-            Gizmos.color = Color.white;
         }
 
-        private void DrawVertices(Transform transform)
+        private void DrawVertices(bool drawHandles, Transform transform)
         {
+            Gizmos.color = Color.black;
+
             var style = new GUIStyle
             {
                 fontSize = 15,
                 normal =
                 {
-                    textColor = Color.red
+                    textColor = Gizmos.color
                 }
             };
-            var index = 0;
+
             foreach (var vertex in vertices)
             {
-                Handles.Label(transform.TransformPoint(vertex.position), index++.ToString(), style);
+                var position = transform.TransformPoint(vertex.position);
+                Gizmos.DrawSphere(position, .1f);
+                if (drawHandles)
+                    Handles.Label(position, $"Vertex {vertex.index}", style);
             }
         }
     }

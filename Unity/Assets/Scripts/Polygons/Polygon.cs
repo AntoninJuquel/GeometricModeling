@@ -79,7 +79,7 @@ namespace Polygons
                     break;
                 case Edges.WingedEdge:
                     _wingedEdgeMesh ??= new WingedEdgeMesh(Mesh);
-                    _wingedEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, transform);
+                    _wingedEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, transform);
                     break;
                 case Edges.Mesh:
                     var vertices = Mesh.vertices;

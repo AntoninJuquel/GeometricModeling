@@ -530,12 +530,13 @@ namespace HalfEdge
                 var p0 = transform.TransformPoint(edge.SourceVertex.Position);
                 var p1 = transform.TransformPoint(edge.EndVertex.Position);
                 var center = (p0 + p1) / 2f;
+                var start = Vector3.Lerp(p0, p1, .1f);
+                var end = Vector3.Lerp(p0, p1, .9f);
 
                 var perpendicular = (isBorder ? center - centroid : centroid - center).normalized;
 
-                var direction = (p1 - p0);
                 Gizmos.color = isBorder ? Color.red : Color.blue;
-                DrawArrow.ForGizmo(p0 + (perpendicular * .1f), direction, .1f);
+                DrawArrow.ForGizmo(start + (perpendicular * .1f), end - start, .1f);
                 if (drawHandles)
                     Handles.Label(center + (perpendicular * .1f), $"Edge {edge.Index}", new GUIStyle
                     {
@@ -579,7 +580,7 @@ namespace HalfEdge
             if (drawCentroid)
             {
                 Gizmos.color = Color.magenta;
-                Gizmos.DrawSphere(transform.TransformPoint(GetCentroid()), .5f);
+                Gizmos.DrawWireSphere(transform.TransformPoint(GetCentroid()), .5f);
             }
         }
     }
