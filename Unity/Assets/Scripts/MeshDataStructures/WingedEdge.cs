@@ -279,8 +279,25 @@ namespace WingedEdge
 
         public Mesh ConvertToFaceVertexMesh()
         {
-            Mesh faceVertexMesh = new Mesh();
-            // magic happens
+            var faceVertexMesh = new Mesh();
+
+            var meshVertices = new Vector3[vertices.Count];
+            var meshQuads = new List<int>();
+
+            var index = 0;
+            foreach (var vertex in vertices)
+            {
+                meshVertices[index++] = vertex.Position;
+            }
+
+            foreach (var face in faces)
+            {
+                face.TraverseEdges(currentEdge => meshQuads.Add(currentEdge.StartVertex.Index));
+            }
+
+            faceVertexMesh.vertices = meshVertices;
+            faceVertexMesh.SetIndices(meshQuads, MeshTopology.Quads, 0);
+
             return faceVertexMesh;
         }
 

@@ -224,8 +224,9 @@ MonoBehaviour:
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
-  drawMode: 0
-  Subdivide: 0
+  mode: 0
+  subdivide: 0
+  copyCsv: 0
   startAngle: 1.0471976
   endAngle: 6.44
   halfSize: {x: 4, y: 2, z: 4}
@@ -510,33 +511,15 @@ MonoBehaviour:
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
-  drawMode: 0
-  Subdivide: 0
-  profile:
+  mode: 0
+  subdivide: 0
+  copyCsv: 0
+  m_Profile:
     serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1.0249959
-      value: 0.06368011
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
+    m_Curve: []
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  bothSides: 1
 --- !u!114 &1195160539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -585,8 +568,9 @@ MonoBehaviour:
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
-  drawMode: 0
-  Subdivide: 0
+  mode: 0
+  subdivide: 0
+  copyCsv: 0
   halfSize: {x: 10, y: 10, z: 10}
 --- !u!23 &1798872308
 MeshRenderer:
@@ -689,8 +673,9 @@ MonoBehaviour:
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
-  drawMode: 0
-  Subdivide: 0
+  mode: 0
+  subdivide: 0
+  copyCsv: 0
   halfSize: {x: 4, y: 2, z: 3}
 --- !u!23 &1892871848
 MeshRenderer:
@@ -858,7 +843,8 @@ MonoBehaviour:
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
-  drawMode: 1
-  Subdivide: 0
+  mode: 0
+  subdivide: 0
+  copyCsv: 0
   halfSize: {x: 4, y: 2, z: 4}
-  nSector: 3
+  nSector: 5
