@@ -12,6 +12,24 @@ namespace WingedEdge
         public int Index;
         public Vector3 Position;
         public WingedEdge Edge;
+
+        public void TraverseEdges(EdgeDelegate edgeDelegate, bool clockwise = true)
+        {
+            var start = Edge;
+            var currentEdge = start;
+            do
+            {
+                edgeDelegate(currentEdge);
+                if (currentEdge.StartVertex == this)
+                {
+                    currentEdge = clockwise ? currentEdge.StartCwEdge : currentEdge.StartCcwEdge;
+                }
+                else
+                {
+                    currentEdge = clockwise ? currentEdge.EndCwEdge : currentEdge.EndCcwEdge;
+                }
+            } while (currentEdge != start);
+        }
     }
 
     public class WingedEdge
@@ -261,16 +279,24 @@ namespace WingedEdge
                 {
                     var currentEdge = edge.EndCcwEdge;
 
-                    while (currentEdge.StartVertex != edge.EndVertex)
-                    {
-                        currentEdge = currentEdge.EndCcwEdge;
-                    }
+                    var isLastEdge = false;
 
-                    while (currentEdge.StartCcwEdge != null)
+                    while (!isLastEdge)
                     {
-                        currentEdge = currentEdge.StartCcwEdge;
+                        if (currentEdge.StartVertex != edge.EndVertex)
+                        {
+                            currentEdge = currentEdge.EndCcwEdge;
+                        }
+                        else if(currentEdge.StartCcwEdge != null)
+                        {
+                            currentEdge = currentEdge.StartCcwEdge;
+                        }
+                        else
+                        {
+                            isLastEdge = true;
+                        }
                     }
-
+                    
                     edge.EndCwEdge = currentEdge;
                     currentEdge.StartCcwEdge = edge;
                 }
