@@ -134,6 +134,27 @@ namespace HalfEdge
             }
 
             Dictionary<(int, int), HalfEdge> edgesDictionary = new();
+
+            void CreateEdge(HalfEdge edge, Face face, Vertex startVertex, Vertex endVertex, HalfEdge previousEdge, HalfEdge nextEdge)
+            {
+                var tuple = (Mathf.Min(startVertex.Index, endVertex.Index), Mathf.Max(startVertex.Index, endVertex.Index));
+
+                if (edgesDictionary.TryGetValue(tuple, out var other))
+                {
+                    edge.TwinEdge = other;
+                    other.TwinEdge = edge;
+                }
+                else
+                {
+                    edgesDictionary.Add(tuple, edge);
+                }
+
+                Edges.Add(edge);
+                edge.Face = face;
+                edge.PrevEdge = previousEdge;
+                edge.NextEdge = nextEdge;
+            }
+
             // Second, build faces & edged
             for (var i = 0; i < meshQuads.Length; i += 4)
             {
@@ -142,11 +163,6 @@ namespace HalfEdge
                 var i2 = meshQuads[i + 2];
                 var i3 = meshQuads[i + 3];
 
-                var i0I1 = (Mathf.Min(i0, i1), Mathf.Max(i0, i1));
-                var i1I2 = (Mathf.Min(i1, i2), Mathf.Max(i1, i2));
-                var i2I3 = (Mathf.Min(i2, i3), Mathf.Max(i2, i3));
-                var i3I0 = (Mathf.Min(i3, i0), Mathf.Max(i3, i0));
-
                 var edge0 = new HalfEdge(i, Vertices[i0]);
                 var edge1 = new HalfEdge(i + 1, Vertices[i1]);
                 var edge2 = new HalfEdge(i + 2, Vertices[i2]);
@@ -154,57 +170,11 @@ namespace HalfEdge
 
                 var face = new Face(Faces.Count, edge0);
 
-                edge0.PrevEdge = edge2.NextEdge = edge3;
-                edge1.PrevEdge = edge3.NextEdge = edge0;
-                edge2.PrevEdge = edge0.NextEdge = edge1;
-                edge3.PrevEdge = edge1.NextEdge = edge2;
+                CreateEdge(edge0, face, Vertices[i0], Vertices[i1], edge3, edge1);
+                CreateEdge(edge1, face, Vertices[i1], Vertices[i2], edge0, edge2);
+                CreateEdge(edge2, face, Vertices[i2], Vertices[i3], edge1, edge3);
+                CreateEdge(edge3, face, Vertices[i3], Vertices[i0], edge2, edge0);
 
-                if (edgesDictionary.TryGetValue(i0I1, out var e0))
-                {
-                    edge0.TwinEdge = e0;
-                    e0.TwinEdge = edge0;
-                }
-                else
-                {
-                    edgesDictionary.Add(i0I1, edge0);
-                }
-
-                if (edgesDictionary.TryGetValue(i1I2, out var e1))
-                {
-                    edge1.TwinEdge = e1;
-                    e1.TwinEdge = edge1;
-                }
-                else
-                {
-                    edgesDictionary.Add(i1I2, edge1);
-                }
-
-                if (edgesDictionary.TryGetValue(i2I3, out var e2))
-                {
-                    edge2.TwinEdge = e2;
-                    e2.TwinEdge = edge2;
-                }
-                else
-                {
-                    edgesDictionary.Add(i2I3, edge2);
-                }
-
-                if (edgesDictionary.TryGetValue(i3I0, out var e3))
-                {
-                    edge3.TwinEdge = e3;
-                    e3.TwinEdge = edge3;
-                }
-                else
-                {
-                    edgesDictionary.Add(i3I0, edge3);
-                }
-
-                edge0.Face = edge1.Face = edge2.Face = edge3.Face = face;
-
-                Edges.Add(edge0);
-                Edges.Add(edge1);
-                Edges.Add(edge2);
-                Edges.Add(edge3);
                 Faces.Add(face);
             }
 

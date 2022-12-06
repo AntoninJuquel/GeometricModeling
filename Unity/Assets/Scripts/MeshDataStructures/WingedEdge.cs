@@ -128,15 +128,13 @@ namespace WingedEdge
                 var tuple = (Mathf.Min(startVertex.Index, endVertex.Index), Mathf.Max(startVertex.Index, endVertex.Index));
                 WingedEdge edge;
 
-                if (edgesDictionary.TryGetValue(tuple, out var e0))
+                if (edgesDictionary.TryGetValue(tuple, out var other))
                 {
-                    newEdge = false;
-                    edge = e0;
+                    edge = other;
                     edge.LeftFace = face;
                 }
                 else
                 {
-                    newEdge = true;
                     edge = new WingedEdge
                     {
                         Index = edges.Count,
@@ -148,6 +146,7 @@ namespace WingedEdge
                     edges.Add(edge);
                 }
 
+                newEdge = other == null;
                 return edge;
             }
 
@@ -192,7 +191,7 @@ namespace WingedEdge
                 SetNeighbours(edge1, edge0, edge2, new1);
                 SetNeighbours(edge2, edge1, edge3, new2);
                 SetNeighbours(edge3, edge2, edge0, new3);
-                
+
                 face.Edge = edge0;
                 faces.Add(face);
             }
@@ -202,7 +201,7 @@ namespace WingedEdge
                 edge.StartVertex.Edge ??= edge;
 
                 if (edge.EndCwEdge != null) continue;
-                
+
                 var currentEdge = edge.EndCcwEdge;
                 var isLastEdge = false;
                 while (!isLastEdge)
