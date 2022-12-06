@@ -123,6 +123,48 @@ namespace WingedEdge
 
             Dictionary<(int, int), WingedEdge> edgesDictionary = new();
 
+            WingedEdge CreateEdge(Face face, Vertex startVertex, Vertex endVertex, out bool newEdge)
+            {
+                var tuple = (Mathf.Min(startVertex.Index, endVertex.Index), Mathf.Max(startVertex.Index, endVertex.Index));
+                WingedEdge edge;
+
+                if (edgesDictionary.TryGetValue(tuple, out var e0))
+                {
+                    newEdge = false;
+                    edge = e0;
+                    edge.LeftFace = face;
+                }
+                else
+                {
+                    newEdge = true;
+                    edge = new WingedEdge
+                    {
+                        Index = edges.Count,
+                        StartVertex = startVertex,
+                        EndVertex = endVertex,
+                        RightFace = face
+                    };
+                    edgesDictionary.Add(tuple, edge);
+                    edges.Add(edge);
+                }
+
+                return edge;
+            }
+
+            void SetNeighbours(WingedEdge edge, WingedEdge previousEdge, WingedEdge nextEdge, bool newEdge)
+            {
+                if (!newEdge)
+                {
+                    edge.EndCwEdge = previousEdge;
+                    edge.StartCcwEdge = nextEdge;
+                }
+                else
+                {
+                    edge.StartCwEdge = previousEdge;
+                    edge.EndCcwEdge = nextEdge;
+                }
+            }
+
             // Second, build faces & edged
             for (var i = 0; i < meshQuads.Length; i += 4)
             {
@@ -130,11 +172,6 @@ namespace WingedEdge
                 var i1 = meshQuads[i + 1];
                 var i2 = meshQuads[i + 2];
                 var i3 = meshQuads[i + 3];
-
-                var i0I1 = (Mathf.Min(i0, i1), Mathf.Max(i0, i1));
-                var i1I2 = (Mathf.Min(i1, i2), Mathf.Max(i1, i2));
-                var i2I3 = (Mathf.Min(i2, i3), Mathf.Max(i2, i3));
-                var i3I0 = (Mathf.Min(i3, i0), Mathf.Max(i3, i0));
 
                 var vert0 = vertices[i0];
                 var vert1 = vertices[i1];
@@ -146,127 +183,16 @@ namespace WingedEdge
                     Index = i / 4,
                 };
 
-                WingedEdge edge0;
-                WingedEdge edge1;
-                WingedEdge edge2;
-                WingedEdge edge3;
+                var edge0 = CreateEdge(face, vert0, vert1, out var new0);
+                var edge1 = CreateEdge(face, vert1, vert2, out var new1);
+                var edge2 = CreateEdge(face, vert2, vert3, out var new2);
+                var edge3 = CreateEdge(face, vert3, vert0, out var new3);
 
-                if (edgesDictionary.TryGetValue(i0I1, out var e0))
-                {
-                    edge0 = e0;
-                    edge0.LeftFace = face;
-                }
-                else
-                {
-                    edge0 = new WingedEdge()
-                    {
-                        Index = edges.Count,
-                        StartVertex = vert0,
-                        EndVertex = vert1,
-                        RightFace = face
-                    };
-                    edgesDictionary.Add(i0I1, edge0);
-                    edges.Add(edge0);
-                }
-
-                if (edgesDictionary.TryGetValue(i1I2, out var e1))
-                {
-                    edge1 = e1;
-                    edge1.LeftFace = face;
-                }
-                else
-                {
-                    edge1 = new WingedEdge()
-                    {
-                        Index = edges.Count,
-                        StartVertex = vert1,
-                        EndVertex = vert2,
-                        RightFace = face
-                    };
-                    edgesDictionary.Add(i1I2, edge1);
-                    edges.Add(edge1);
-                }
-
-                if (edgesDictionary.TryGetValue(i2I3, out var e2))
-                {
-                    edge2 = e2;
-                    edge2.LeftFace = face;
-                }
-                else
-                {
-                    edge2 = new WingedEdge()
-                    {
-                        Index = edges.Count,
-                        StartVertex = vert2,
-                        EndVertex = vert3,
-                        RightFace = face
-                    };
-                    edgesDictionary.Add(i2I3, edge2);
-                    edges.Add(edge2);
-                }
-
-                if (edgesDictionary.TryGetValue(i3I0, out var e3))
-                {
-                    edge3 = e3;
-                    edge3.LeftFace = face;
-                }
-                else
-                {
-                    edge3 = new WingedEdge
-                    {
-                        Index = edges.Count,
-                        StartVertex = vert3,
-                        EndVertex = vert0,
-                        RightFace = face
-                    };
-                    edgesDictionary.Add(i3I0, edge3);
-                    edges.Add(edge3);
-                }
-
-                if (e0 != null)
-                {
-                    edge0.EndCwEdge = edge3;
-                    edge0.StartCcwEdge = edge1;
-                }
-                else
-                {
-                    edge0.StartCwEdge = edge3;
-                    edge0.EndCcwEdge = edge1;
-                }
-
-                if (e1 != null)
-                {
-                    edge1.EndCwEdge = edge0;
-                    edge1.StartCcwEdge = edge2;
-                }
-                else
-                {
-                    edge1.StartCwEdge = edge0;
-                    edge1.EndCcwEdge = edge2;
-                }
-
-                if (e2 != null)
-                {
-                    edge2.EndCwEdge = edge1;
-                    edge2.StartCcwEdge = edge3;
-                }
-                else
-                {
-                    edge2.StartCwEdge = edge1;
-                    edge2.EndCcwEdge = edge3;
-                }
-
-                if (e3 != null)
-                {
-                    edge3.EndCwEdge = edge2;
-                    edge3.StartCcwEdge = edge0;
-                }
-                else
-                {
-                    edge3.StartCwEdge = edge2;
-                    edge3.EndCcwEdge = edge0;
-                }
-
+                SetNeighbours(edge0, edge3, edge1, new0);
+                SetNeighbours(edge1, edge0, edge2, new1);
+                SetNeighbours(edge2, edge1, edge3, new2);
+                SetNeighbours(edge3, edge2, edge0, new3);
+                
                 face.Edge = edge0;
                 faces.Add(face);
             }
@@ -275,31 +201,28 @@ namespace WingedEdge
             {
                 edge.StartVertex.Edge ??= edge;
 
-                if (edge.EndCwEdge == null)
+                if (edge.EndCwEdge != null) continue;
+                
+                var currentEdge = edge.EndCcwEdge;
+                var isLastEdge = false;
+                while (!isLastEdge)
                 {
-                    var currentEdge = edge.EndCcwEdge;
-
-                    var isLastEdge = false;
-
-                    while (!isLastEdge)
+                    if (currentEdge.StartVertex != edge.EndVertex)
                     {
-                        if (currentEdge.StartVertex != edge.EndVertex)
-                        {
-                            currentEdge = currentEdge.EndCcwEdge;
-                        }
-                        else if(currentEdge.StartCcwEdge != null)
-                        {
-                            currentEdge = currentEdge.StartCcwEdge;
-                        }
-                        else
-                        {
-                            isLastEdge = true;
-                        }
+                        currentEdge = currentEdge.EndCcwEdge;
                     }
-                    
-                    edge.EndCwEdge = currentEdge;
-                    currentEdge.StartCcwEdge = edge;
+                    else if (currentEdge.StartCcwEdge != null)
+                    {
+                        currentEdge = currentEdge.StartCcwEdge;
+                    }
+                    else
+                    {
+                        isLastEdge = true;
+                    }
                 }
+
+                edge.EndCwEdge = currentEdge;
+                currentEdge.StartCcwEdge = edge;
             }
         }
 
