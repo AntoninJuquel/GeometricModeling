@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Polygons;
 using UnityEditor;
 using UnityEngine;
 
@@ -354,7 +355,7 @@ namespace WingedEdge
             }
         }
 
-        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, bool drawHandles, Transform transform)
+        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, bool drawHandles, Highlight highlight, int highlightIndex, Transform transform)
         {
             if (drawVertices)
                 DrawVertices(drawHandles, transform);

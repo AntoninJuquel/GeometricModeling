@@ -4,7 +4,6 @@ using System.Linq;
 using HalfEdge;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Serialization;
 using WingedEdge;
 
 namespace Polygons
@@ -16,17 +15,28 @@ namespace Polygons
         Mesh
     }
 
+    public enum Highlight
+    {
+        None,
+        Vertex,
+        Edge,
+        Face
+    }
+
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class Polygon : MonoBehaviour
     {
-        [SerializeField] private bool drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles;
+        [SerializeField] private bool toggleAll, drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles;
         [SerializeField] private Edges mode;
-        public bool subdivide;
-        public bool copyCsv;
+        [SerializeField] private Highlight highlight;
+        [Min(0)][SerializeField] private int highlightIndex;
+        [SerializeField] private bool subdivide;
+        [SerializeField] private bool copyCsv;
         private HalfEdgeMesh _halfEdgeMesh;
         private WingedEdgeMesh _wingedEdgeMesh;
         private MeshFilter _meshFilter;
         private List<Mesh> _meshes = new();
+        private bool prevToggle;
 
         protected Mesh Mesh
         {
@@ -75,6 +85,7 @@ namespace Polygons
         private void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
+            prevToggle = toggleAll;
         }
 
         private void Update()
@@ -101,6 +112,15 @@ namespace Polygons
             }
         }
 
+        private void OnValidate()
+        {
+            if (toggleAll != prevToggle)
+            {
+                drawVertices = drawEdges = drawFaces = drawCentroid = drawHandles = toggleAll;
+                prevToggle = toggleAll;
+            }
+        }
+
         private void OnDrawGizmos()
         {
             if (!_meshFilter || !Mesh || !Application.isPlaying) return;
@@ -109,11 +129,11 @@ namespace Polygons
             {
                 case Edges.HalfEdge:
                     _halfEdgeMesh ??= new HalfEdgeMesh(Mesh);
-                    _halfEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, transform);
+                    _halfEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, highlight, highlightIndex, transform);
                     break;
                 case Edges.WingedEdge:
                     _wingedEdgeMesh ??= new WingedEdgeMesh(Mesh);
-                    _wingedEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, transform);
+                    _wingedEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, highlight, highlightIndex, transform);
                     break;
                 case Edges.Mesh:
                     var vertices = Mesh.vertices;

@@ -219,12 +219,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36debf777abdea543946dac5ed09d9ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  toggleAll: 0
   drawVertices: 0
   drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
   mode: 0
+  highlight: 0
+  highlightIndex: 0
   subdivide: 0
   copyCsv: 0
   startAngle: 1.0471976
@@ -506,12 +509,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ad6a729a8bf2bb41b675499b7a33f04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  toggleAll: 0
   drawVertices: 0
   drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
   mode: 0
+  highlight: 0
+  highlightIndex: 0
   subdivide: 0
   copyCsv: 0
   m_Profile:
@@ -563,12 +569,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a7f8c221cd88d94cabf47ff917ea1a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  drawVertices: 1
-  drawEdges: 1
+  toggleAll: 0
+  drawVertices: 0
+  drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
   mode: 0
+  highlight: 0
+  highlightIndex: 0
   subdivide: 0
   copyCsv: 0
   halfSize: {x: 10, y: 10, z: 10}
@@ -668,12 +677,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fa7f1d5685d269409850cd82ab8a4cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  toggleAll: 0
   drawVertices: 0
   drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
   mode: 0
+  highlight: 0
+  highlightIndex: 0
   subdivide: 0
   copyCsv: 0
   halfSize: {x: 4, y: 2, z: 3}
@@ -838,13 +850,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5920981e1a81463e96ddd040dcac792c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  toggleAll: 0
   drawVertices: 0
   drawEdges: 0
   drawFaces: 0
   drawCentroid: 0
   drawHandles: 0
   mode: 0
+  highlight: 0
+  highlightIndex: 0
   subdivide: 0
   copyCsv: 0
-  halfSize: {x: 4, y: 2, z: 4}
+  halfSize: {x: 5, y: 2, z: 5}
   nSector: 5
