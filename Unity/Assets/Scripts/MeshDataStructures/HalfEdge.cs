@@ -45,6 +45,22 @@ namespace HalfEdge
                 currentEdge = currentEdge.PrevEdge.TwinEdge;
             } while (currentEdge != start);
         }
+
+        public void Draw(bool drawHandles, bool highlight, Transform transform, string text = "Vertex ")
+        {
+            Gizmos.color = Color.black;
+            var position = transform.TransformPoint(Position);
+            Gizmos.DrawSphere(position, highlight ? .25f : .1f);
+            if (drawHandles || highlight)
+                Handles.Label(position, $"{text}{Index}", new GUIStyle
+                {
+                    fontSize = highlight ? 20 : 15,
+                    normal =
+                    {
+                        textColor = Gizmos.color
+                    }
+                });
+        }
     }
 
     public class HalfEdge
@@ -71,6 +87,36 @@ namespace HalfEdge
             var pos1 = NextEdge.SourceVertex.Position;
 
             return (pos0 + pos1) / 2f;
+        }
+
+        public void Draw(bool drawHandles, bool highlight, Transform transform, string text = "Edge ")
+        {
+            var isBorder = Face == null;
+
+            var centroid = transform.TransformPoint(isBorder ? TwinEdge.Face.GetCentroid() : Face.GetCentroid());
+            var p0 = transform.TransformPoint(SourceVertex.Position);
+            var p1 = transform.TransformPoint(EndVertex.Position);
+            var center = (p0 + p1) / 2f;
+            var perpendicular = (isBorder ? center - centroid : centroid - center).normalized;
+
+            var start = Vector3.Lerp(p0, p1, .1f) + perpendicular * .1f;
+            var end = Vector3.Lerp(p0, p1, .9f) + perpendicular * .1f;
+
+            Gizmos.color = isBorder ? Color.red : Color.blue;
+            DrawArrow.ForGizmo(start, end - start, .1f);
+
+            if (drawHandles || highlight)
+                Handles.Label(center + perpendicular * .1f, $"{text}{Index}", new GUIStyle
+                {
+                    fontSize = highlight ? 20 : 15,
+                    normal =
+                    {
+                        textColor = Gizmos.color
+                    }
+                });
+
+            if (highlight)
+                Handles.DrawBezier(start, end, start, end, Gizmos.color, null, 5);
         }
     }
 
@@ -106,6 +152,29 @@ namespace HalfEdge
                 iteration++;
             });
             return sum / iteration;
+        }
+
+        public void Draw(bool drawHandles, bool highlight, Transform transform, string text = "Face ")
+        {
+            Gizmos.color = Color.green;
+            TraverseEdges(currentEdge =>
+            {
+                var start = transform.TransformPoint(currentEdge.SourceVertex.Position);
+                var end = transform.TransformPoint(currentEdge.NextEdge.SourceVertex.Position);
+                if (highlight)
+                    Handles.DrawBezier(start, end, start, end, Gizmos.color, null, 5);
+                else
+                    Gizmos.DrawLine(start, end);
+            });
+            if (drawHandles || highlight)
+                Handles.Label(transform.TransformPoint(GetCentroid()), $"{text}{Index}", new GUIStyle
+                {
+                    fontSize = highlight ? 20 : 15,
+                    normal =
+                    {
+                        textColor = Gizmos.color
+                    }
+                });
         }
     }
 
@@ -464,33 +533,16 @@ namespace HalfEdge
 
         private void DrawVertices(bool draw, bool drawHandles, Highlight highlight, int index, Transform transform)
         {
-            Gizmos.color = Color.black;
-            var style = new GUIStyle
-            {
-                fontSize = 15,
-                normal =
-                {
-                    textColor = Gizmos.color
-                }
-            };
-
             foreach (var vertex in Vertices)
             {
-                var position = transform.TransformPoint(vertex.Position);
                 var highlightVertex = highlight == Highlight.Vertex && vertex.Index == index;
                 var drawVertex = draw || highlightVertex;
 
                 if (drawVertex)
                 {
-                    Gizmos.DrawSphere(position, highlightVertex ? .25f : .1f);
-                    if (drawHandles || highlightVertex)
-                        Handles.Label(position, $"Vertex {vertex.Index}", style);
+                    vertex.Draw(drawHandles, highlightVertex, transform);
                     if (highlightVertex)
-                    {
-                        var start = transform.TransformPoint(vertex.OutgoingEdge.SourceVertex.Position);
-                        var end = transform.TransformPoint(vertex.OutgoingEdge.EndVertex.Position);
-                        DrawArrow.ForGizmo(start, Vector3.Lerp(start, end, .9f) - start, .1f);
-                    }
+                        vertex.OutgoingEdge.Draw(true, true, transform, "Outgoing Edge ");
                 }
             }
         }
@@ -504,43 +556,24 @@ namespace HalfEdge
 
                 if (drawEdge)
                 {
-                    var isBorder = edge.Face == null;
+                    edge.Draw(drawHandles, highlightEdge, transform);
 
-                    var centroid = transform.TransformPoint(isBorder ? edge.TwinEdge.Face.GetCentroid() : edge.Face.GetCentroid());
-                    var p0 = transform.TransformPoint(edge.SourceVertex.Position);
-                    var p1 = transform.TransformPoint(edge.EndVertex.Position);
-                    var center = (p0 + p1) / 2f;
-                    var start = Vector3.Lerp(p0, p1, .1f);
-                    var end = Vector3.Lerp(p0, p1, .9f);
+                    if (highlightEdge)
+                    {
+                        edge.NextEdge.Draw(true, true, transform, "Next Edge ");
+                        edge.PrevEdge.Draw(true, true, transform, "Previous Edge ");
+                        edge.TwinEdge.Draw(true, true, transform, "Twin Edge ");
 
-                    var perpendicular = (isBorder ? center - centroid : centroid - center).normalized;
+                        edge.Face.Draw(true, true, transform);
 
-                    Gizmos.color = isBorder ? Color.red : Color.blue;
-                    DrawArrow.ForGizmo(start + (perpendicular * .1f), end - start, .1f);
-                    if (drawHandles || highlightEdge)
-                        Handles.Label(center + (perpendicular * .1f), $"Edge {edge.Index}", new GUIStyle
-                        {
-                            fontSize = 15,
-                            normal =
-                            {
-                                textColor = Gizmos.color
-                            }
-                        });
+                        edge.SourceVertex.Draw(true, true, transform, "SourceVertex ");
+                    }
                 }
             }
         }
 
         private void DrawFaces(bool draw, bool drawHandles, Highlight highlight, int index, Transform transform)
         {
-            var style = new GUIStyle
-            {
-                fontSize = 15,
-                normal =
-                {
-                    textColor = Color.green
-                }
-            };
-
             foreach (var face in Faces)
             {
                 var highlightFace = highlight == Highlight.Face && face.Index == index;
@@ -548,16 +581,22 @@ namespace HalfEdge
 
                 if (drawFace)
                 {
-                    Gizmos.color = Color.green;
-                    face.TraverseEdges(currentEdge => Gizmos.DrawLine(transform.TransformPoint(currentEdge.SourceVertex.Position), transform.TransformPoint(currentEdge.NextEdge.SourceVertex.Position)));
-                    if (drawHandles || highlightFace)
-                        Handles.Label(transform.TransformPoint(face.GetCentroid()), $"Face {face.Index}", style);
+                    face.Draw(drawHandles, highlightFace, transform);
+
+                    if (highlightFace)
+                        face.Edge.Draw(true, true, transform);
                 }
             }
         }
 
-        public void DrawGizmos(bool drawVertices, bool drawEdges, bool drawFaces, bool drawCentroid, bool drawHandles, Highlight highlight, int highlightIndex, Transform transform)
+        public void DrawGizmos(Draw draw, Highlight highlight, int highlightIndex, Transform transform)
         {
+            var drawVertices = ((byte) draw & (byte) Draw.Vertices) != 0;
+            var drawEdges = ((byte) draw & (byte) Draw.Edges) != 0;
+            var drawFaces = ((byte) draw & (byte) Draw.Faces) != 0;
+            var drawHandles = ((byte) draw & (byte) Draw.Handles) != 0;
+            var drawCentroid = ((byte) draw & (byte) Draw.Centroid) != 0;
+
             DrawVertices(drawVertices, drawHandles, highlight, highlightIndex, transform);
             DrawEdges(drawEdges, drawHandles, highlight, highlightIndex, transform);
             DrawFaces(drawFaces, drawHandles, highlight, highlightIndex, transform);

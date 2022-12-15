@@ -12,7 +12,7 @@ namespace Polygons
     {
         HalfEdge,
         WingedEdge,
-        Mesh
+        VertexFace
     }
 
     public enum Highlight
@@ -23,20 +23,30 @@ namespace Polygons
         Face
     }
 
+    [Flags]
+    public enum Draw
+    {
+        None = 0,
+        Vertices = 1 << 0,
+        Edges = 1 << 1,
+        Faces = 1 << 2,
+        Handles = 1 << 3,
+        Centroid = 1 << 4
+    }
+
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class Polygon : MonoBehaviour
     {
-        [SerializeField] private bool toggleAll, drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles;
+        public Draw draw;
         [SerializeField] private Edges mode;
         [SerializeField] private Highlight highlight;
-        [Min(0)][SerializeField] private int highlightIndex;
+        [Min(0)] [SerializeField] private int highlightIndex;
         [SerializeField] private bool subdivide;
-        [SerializeField] private bool copyCsv;
+        [SerializeField] private bool convertToCSVFormat;
         private HalfEdgeMesh _halfEdgeMesh;
         private WingedEdgeMesh _wingedEdgeMesh;
         private MeshFilter _meshFilter;
         private List<Mesh> _meshes = new();
-        private bool prevToggle;
 
         protected Mesh Mesh
         {
@@ -85,7 +95,6 @@ namespace Polygons
         private void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
-            prevToggle = toggleAll;
         }
 
         private void Update()
@@ -96,14 +105,14 @@ namespace Polygons
                 Subdivide();
             }
 
-            if (copyCsv)
+            if (convertToCSVFormat)
             {
-                copyCsv = false;
+                convertToCSVFormat = false;
                 var csv = mode switch
                 {
                     Edges.HalfEdge => _halfEdgeMesh.ConvertToCsv("\t"),
                     Edges.WingedEdge => _wingedEdgeMesh.ConvertToCsv("\t"),
-                    Edges.Mesh => ConvertToCsv("\t"),
+                    Edges.VertexFace => ConvertToCsv("\t"),
                     _ => throw new ArgumentOutOfRangeException()
                 };
 
@@ -112,30 +121,27 @@ namespace Polygons
             }
         }
 
-        private void OnValidate()
-        {
-            if (toggleAll != prevToggle)
-            {
-                drawVertices = drawEdges = drawFaces = drawCentroid = drawHandles = toggleAll;
-                prevToggle = toggleAll;
-            }
-        }
-
         private void OnDrawGizmos()
         {
             if (!_meshFilter || !Mesh || !Application.isPlaying) return;
+
+            var drawVertices = ((byte) draw & (byte) Draw.Vertices) != 0;
+            var drawEdges = ((byte) draw & (byte) Draw.Edges) != 0;
+            var drawFaces = ((byte) draw & (byte) Draw.Faces) != 0;
+            var drawHandles = ((byte) draw & (byte) Draw.Handles) != 0;
+            var drawCentroid = ((byte) draw & (byte) Draw.Centroid) != 0;
 
             switch (mode)
             {
                 case Edges.HalfEdge:
                     _halfEdgeMesh ??= new HalfEdgeMesh(Mesh);
-                    _halfEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, highlight, highlightIndex, transform);
+                    _halfEdgeMesh.DrawGizmos(draw, highlight, highlightIndex, transform);
                     break;
                 case Edges.WingedEdge:
                     _wingedEdgeMesh ??= new WingedEdgeMesh(Mesh);
-                    _wingedEdgeMesh.DrawGizmos(drawVertices, drawEdges, drawFaces, drawCentroid, drawHandles, highlight, highlightIndex, transform);
+                    _wingedEdgeMesh.DrawGizmos(draw, highlight, highlightIndex, transform);
                     break;
-                case Edges.Mesh:
+                case Edges.VertexFace:
                     var vertices = Mesh.vertices;
                     var quads = Mesh.GetIndices(0);
                     var style = new GUIStyle
@@ -151,7 +157,6 @@ namespace Polygons
                         {
                             var worldPos = transform.TransformPoint(vertices[i]);
                             Gizmos.DrawSphere(worldPos, .1f);
-
                             if (drawHandles)
                                 Handles.Label(worldPos, $"Vertex {i}", style);
                         }

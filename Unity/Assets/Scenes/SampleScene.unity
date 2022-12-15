@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028334, g: 0.22571328, b: 0.3069217, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -141,7 +141,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &666618639
 Transform:
   m_ObjectHideFlags: 0
@@ -150,7 +150,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 666618638}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 45, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -219,17 +219,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36debf777abdea543946dac5ed09d9ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleAll: 0
-  drawVertices: 0
-  drawEdges: 0
-  drawFaces: 0
-  drawCentroid: 0
-  drawHandles: 0
+  draw: -1
   mode: 0
   highlight: 0
   highlightIndex: 0
   subdivide: 0
-  copyCsv: 0
+  convertToCSVFormat: 0
   startAngle: 1.0471976
   endAngle: 6.44
   halfSize: {x: 4, y: 2, z: 4}
@@ -321,7 +316,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 705507993}
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: -16.12, y: 3, z: 0}
+  m_LocalPosition: {x: -100, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -431,7 +426,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!33 &1195160535
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -509,17 +504,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ad6a729a8bf2bb41b675499b7a33f04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleAll: 0
-  drawVertices: 0
-  drawEdges: 0
-  drawFaces: 0
-  drawCentroid: 0
-  drawHandles: 0
+  draw: 0
   mode: 0
   highlight: 0
   highlightIndex: 0
   subdivide: 0
-  copyCsv: 0
+  convertToCSVFormat: 0
   m_Profile:
     serializedVersion: 2
     m_Curve: []
@@ -556,7 +546,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1798872307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -569,17 +559,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a7f8c221cd88d94cabf47ff917ea1a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleAll: 0
-  drawVertices: 0
-  drawEdges: 0
-  drawFaces: 0
-  drawCentroid: 0
-  drawHandles: 0
+  draw: -1
   mode: 0
   highlight: 0
   highlightIndex: 0
   subdivide: 0
-  copyCsv: 0
+  convertToCSVFormat: 0
   halfSize: {x: 10, y: 10, z: 10}
 --- !u!23 &1798872308
 MeshRenderer:
@@ -639,7 +624,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1798872306}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -45, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -664,7 +649,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1892871847
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -677,18 +662,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fa7f1d5685d269409850cd82ab8a4cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleAll: 0
-  drawVertices: 0
-  drawEdges: 0
-  drawFaces: 0
-  drawCentroid: 0
-  drawHandles: 0
+  draw: -1
   mode: 0
   highlight: 0
   highlightIndex: 0
   subdivide: 0
-  copyCsv: 0
-  halfSize: {x: 4, y: 2, z: 3}
+  convertToCSVFormat: 0
+  halfSize: {x: 2, y: 2, z: 2}
 --- !u!23 &1892871848
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -747,7 +727,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1892871846}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -15, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -781,7 +761,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2121492994}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 15, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -795,7 +775,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2121492994}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -850,16 +830,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5920981e1a81463e96ddd040dcac792c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleAll: 0
-  drawVertices: 0
-  drawEdges: 0
-  drawFaces: 0
-  drawCentroid: 0
-  drawHandles: 0
+  draw: -1
   mode: 0
   highlight: 0
   highlightIndex: 0
   subdivide: 0
-  copyCsv: 0
-  halfSize: {x: 5, y: 2, z: 5}
-  nSector: 5
+  convertToCSVFormat: 0
+  halfSize: {x: 10, y: 2, z: 10}
+  nSector: 7
