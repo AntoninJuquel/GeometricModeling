@@ -22,6 +22,9 @@
 
 # Utilisation
 
+## 0. Ouvrir la bonne scène
+A la première ouverture du projet veuillez ouvrir la scene "SampleScene" dans le dossier "Scenes" car il est possible que le porjet s'ouvre sur un scène vide
+
 ## 1. Les objets 3D
 Chaque objet 3D est présent dans la scène et activable pour l'utiliser.
 
